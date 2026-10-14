@@ -1,0 +1,40 @@
+name: Bug report
+description: Something in @labpane/os or @labpane/ui doesn't work as documented
+labels: [bug]
+body:
+  - type: dropdown
+    id: package
+    attributes:
+      label: Package
+      options:
+        - "@labpane/os"
+        - "@labpane/ui"
+        - Both
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: Package version
+      placeholder: 1.0.0
+    validations:
+      required: true
+  - type: input
+    id: environment
+    attributes:
+      label: React, Tailwind, and browser versions
+      placeholder: React 19.2, Tailwind 4.1, Chrome 141
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened
+      description: What you did, what you expected, and what happened instead.
+    validations:
+      required: true
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Reproduction
+      description: A link to a minimal repository or sandbox, or the shortest code that shows the bug.
+    validations:
+      required: true

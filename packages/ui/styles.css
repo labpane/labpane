@@ -1,0 +1,235 @@
+@layer theme, base, components, utilities;
+@import "tailwindcss/theme.css" layer(theme) prefix(labui);
+@import "tailwindcss/utilities.css" layer(utilities) prefix(labui) source(none);
+@source "./";
+@custom-variant dark (&:is(.dark *));
+
+:where(:root) {
+  --labui-font-sans:
+    system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI Variable Text",
+    "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --labui-font-mono:
+    ui-monospace, "SFMono-Regular", "SF Mono", "Cascadia Mono", Menlo, Consolas,
+    "Liberation Mono", monospace;
+  --labui-font-display:
+    system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI Variable Display",
+    "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --labui-radius: 0.75rem;
+  --labui-radius-dialog: 1.25rem;
+  --labui-control-height: 2.5rem;
+  --labui-control-height-sm: 2.25rem;
+  --labui-control-px: 0.75rem;
+  --labui-row-py: 0.625rem;
+  --labui-background: #eeeeee;
+  --labui-foreground: #242424;
+  --labui-card: #ffffff;
+  --labui-card-foreground: #242424;
+  --labui-popover: #fcfcfc;
+  --labui-popover-foreground: #242424;
+  --labui-primary: #05697a;
+  --labui-primary-foreground: #ffffff;
+  --labui-link: #05697a;
+  --labui-secondary: #e6e6e6;
+  --labui-secondary-foreground: #626262;
+  --labui-muted: #eeeeee;
+  --labui-muted-foreground: #626262;
+  --labui-accent: #e6e6e6;
+  --labui-accent-foreground: #242424;
+  --labui-destructive: #b12637;
+  --labui-destructive-foreground: #ffffff;
+  --labui-destructive-muted: #fff0f1;
+  --labui-success: #116d3b;
+  --labui-success-foreground: #ffffff;
+  --labui-warning: oklch(47.3% 0.137 46.201);
+  --labui-warning-foreground: #ffffff;
+  --labui-border: #d6d6d6;
+  --labui-input: #858585;
+  --labui-input-background: #eeeeee;
+  --labui-ring: #1d9db4;
+  --labui-overlay: color-mix(in srgb, #242424 18%, transparent);
+}
+
+:where(.dark) {
+  --labui-background: #1c1c1c;
+  --labui-foreground: #e8e8e8;
+  --labui-card: #242424;
+  --labui-card-foreground: #e8e8e8;
+  --labui-popover: #2d2d2d;
+  --labui-popover-foreground: #f3f3f3;
+  --labui-primary: #68bccf;
+  --labui-primary-foreground: #1c1c1c;
+  --labui-link: #68bccf;
+  --labui-secondary: #363636;
+  --labui-secondary-foreground: #e8e8e8;
+  --labui-muted: #2d2d2d;
+  --labui-muted-foreground: #a3a3a3;
+  --labui-accent: #363636;
+  --labui-accent-foreground: #f3f3f3;
+  --labui-destructive: #f0808c;
+  --labui-destructive-foreground: #ffffff;
+  --labui-destructive-muted: color-mix(in srgb, #f0808c 12%, #242424);
+  --labui-success: #3ddc84;
+  --labui-success-foreground: #06271a;
+  --labui-warning: oklch(87.9% 0.169 91.605);
+  --labui-warning-foreground: oklch(27.9% 0.077 45.635);
+  --labui-border: #363636;
+  --labui-input: #858585;
+  --labui-input-background: #242424;
+  --labui-ring: #68bccf;
+  --labui-overlay: color-mix(in srgb, #000000 50%, transparent);
+}
+
+@media (forced-colors: active) {
+  :root,
+  .dark {
+    --labui-background: Canvas !important;
+    --labui-card: Canvas !important;
+    --labui-border: CanvasText !important;
+    --labui-foreground: CanvasText !important;
+  }
+}
+
+@theme inline {
+  --radius-sm: calc(var(--labui-radius) - 4px);
+  --radius-md: calc(var(--labui-radius) - 2px);
+  --radius-lg: var(--labui-radius);
+  --radius-xl: calc(var(--labui-radius) + 4px);
+  --color-background: var(--labui-background);
+  --color-foreground: var(--labui-foreground);
+  --color-card: var(--labui-card);
+  --color-card-foreground: var(--labui-card-foreground);
+  --color-popover: var(--labui-popover);
+  --color-popover-foreground: var(--labui-popover-foreground);
+  --color-primary: var(--labui-primary);
+  --color-primary-foreground: var(--labui-primary-foreground);
+  --color-link: var(--labui-link);
+  --color-secondary: var(--labui-secondary);
+  --color-secondary-foreground: var(--labui-secondary-foreground);
+  --color-muted: var(--labui-muted);
+  --color-muted-foreground: var(--labui-muted-foreground);
+  --color-accent: var(--labui-accent);
+  --color-accent-foreground: var(--labui-accent-foreground);
+  --color-destructive: var(--labui-destructive);
+  --color-destructive-foreground: var(--labui-destructive-foreground);
+  --color-destructive-muted: var(--labui-destructive-muted);
+  --color-success: var(--labui-success);
+  --color-success-foreground: var(--labui-success-foreground);
+  --color-warning: var(--labui-warning);
+  --color-warning-foreground: var(--labui-warning-foreground);
+  --color-border: var(--labui-border);
+  --color-input: var(--labui-input);
+  --color-input-background: var(--labui-input-background);
+  --color-ring: var(--labui-ring);
+  --color-overlay: var(--labui-overlay);
+}
+
+@theme {
+  --animate-spin: labui-spin 1s linear infinite;
+  --animate-pulse: labui-pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+  --animate-pop: labui-pop 160ms ease-out;
+  @keyframes labui-spin {
+    to {
+      transform: rotate(360deg);
+    }
+  }
+  @keyframes labui-pulse {
+    50% {
+      opacity: 0.5;
+    }
+  }
+  @keyframes labui-pop {
+    from {
+      opacity: 0;
+      transform: scale(0.92);
+    }
+    to {
+      opacity: 1;
+      transform: scale(1);
+    }
+  }
+}
+
+@utility range-overlay {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  cursor: ns-resize;
+  appearance: none;
+  opacity: 0;
+  writing-mode: vertical-lr;
+  direction: rtl;
+  &::-webkit-slider-thumb {
+    appearance: none;
+    width: 100%;
+    height: 0;
+  }
+  &::-moz-range-thumb {
+    width: 100%;
+    height: 0;
+    border: 0;
+  }
+  @media (forced-colors: active) {
+    appearance: auto;
+    opacity: 1;
+    &::-webkit-slider-thumb {
+      appearance: auto;
+      width: auto;
+      height: auto;
+    }
+    &::-moz-range-thumb {
+      width: 1rem;
+      height: 1rem;
+      border: 1px solid ButtonText;
+    }
+  }
+}
+
+@theme inline reference {
+  --font-sans: var(--labui-font-sans);
+  --font-mono: var(--labui-font-mono);
+  --font-display: var(--labui-font-display);
+}
+
+@layer base {
+  :where([class*="labui:"]) {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+    border: 0 solid var(--labui-border);
+    outline-color: color-mix(in oklab, var(--labui-ring) 50%, transparent);
+  }
+  :where(button, input, select, textarea, a)[class*="labui:"] {
+    font: inherit;
+    font-feature-settings: inherit;
+    letter-spacing: inherit;
+    color: inherit;
+    border-radius: 0;
+    background-color: transparent;
+    text-decoration: inherit;
+  }
+  :where(input, textarea)[class*="labui:"]::placeholder {
+    opacity: 1;
+    color: color-mix(in srgb, currentcolor 50%, transparent);
+  }
+  :where(table[class*="labui:"]) {
+    border-collapse: collapse;
+    text-indent: 0;
+  }
+  :where(h1, h2, h3, h4, h5, h6)[class*="labui:"] {
+    font-size: inherit;
+    font-weight: inherit;
+  }
+  :where(svg[class*="labui:"]) {
+    display: block;
+    vertical-align: middle;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    :where([class*="labui:"]) {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
+  }
+}

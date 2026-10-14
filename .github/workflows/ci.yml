@@ -1,0 +1,74 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  lint:
+    name: Lint and format
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: oven-sh/setup-bun@v2
+      - run: bun install --frozen-lockfile
+      - run: bun run lint
+      - run: bun run format:check
+
+  test:
+    name: Build and test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: oven-sh/setup-bun@v2
+      - run: bun install --frozen-lockfile
+      - run: bun run build
+      - run: bun run test
+      - run: bun run check:packages
+
+  example:
+    name: Example site
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: oven-sh/setup-bun@v2
+      - run: bun install --frozen-lockfile
+      - run: bun run build
+      - name: Install Chromium
+        working-directory: example
+        run: bunx playwright install --with-deps chromium
+      - name: Build and test the site
+        working-directory: example
+        run: bun run test
+
+  consumer:
+    name: Packages in a React ${{ matrix.variant }} app
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        variant: [minimum, react18, latest]
+    steps:
+      - uses: actions/checkout@v7
+      - uses: oven-sh/setup-bun@v2
+
+      - name: Install browser dependencies
+        run: npx --yes playwright@1.64.0 install-deps chromium
+
+      - name: Build, install and test the fixture app
+        working-directory: e2e/consumer
+        run: bun run.mjs ${{ matrix.variant }}
+
+      - uses: actions/upload-artifact@v7
+        if: failure()
+        with:
+          name: consumer-${{ matrix.variant }}
+          path: e2e/consumer/.work/${{ matrix.variant }}/test-results

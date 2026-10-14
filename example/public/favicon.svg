@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+  <style>
+    .back { fill: #05697a; }
+    .pane { fill: #ffffff; }
+    @media (prefers-color-scheme: dark) {
+      .back { fill: #68bccf; }
+      .pane { fill: #1c1c1c; }
+    }
+  </style>
+  <rect x="3" y="2.5" width="9" height="6" rx="2" class="back" />
+  <rect x="2" y="5.5" width="20" height="16" rx="3.5" class="back" />
+  <rect x="4.5" y="8.5" width="8" height="10.5" rx="1.5" class="pane" />
+  <rect x="14" y="8.5" width="5.5" height="10.5" rx="1.5" class="pane" fill-opacity="0.7" />
+</svg>

@@ -1,0 +1,32 @@
+{
+  "minimum": {
+    "dependencies": {
+      "react": "18.2.0",
+      "react-dom": "18.2.0"
+    },
+    "devDependencies": {
+      "@types/react": "18.2.79",
+      "@types/react-dom": "18.2.25"
+    }
+  },
+  "react18": {},
+  "latest": {
+    "dependencies": {
+      "@radix-ui/react-alert-dialog": "latest",
+      "@radix-ui/react-checkbox": "latest",
+      "@radix-ui/react-context-menu": "latest",
+      "@radix-ui/react-dialog": "latest",
+      "@radix-ui/react-dropdown-menu": "latest",
+      "@radix-ui/react-popover": "latest",
+      "@radix-ui/react-select": "latest",
+      "@radix-ui/react-slot": "latest",
+      "react": "latest",
+      "react-dom": "latest"
+    },
+    "devDependencies": {
+      "@types/react": "latest",
+      "@types/react-dom": "latest"
+    },
+    "overrides": {}
+  }
+}

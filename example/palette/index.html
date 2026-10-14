@@ -1,0 +1,28 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Palette: every @labpane/ui component</title>
+    <meta
+      name="description"
+      content="Every @labpane/ui component with its variants, sizes, and states, and the colour tokens of @labpane/ui and @labpane/os in light and dark."
+    />
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <script>
+      try {
+        var theme = localStorage.getItem("labpane-theme");
+      } catch {}
+      if (
+        theme === "dark" ||
+        (theme !== "light" &&
+          matchMedia("(prefers-color-scheme: dark)").matches)
+      )
+        document.documentElement.classList.add("dark");
+    </script>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="../src/palette/main.tsx"></script>
+  </body>
+</html>

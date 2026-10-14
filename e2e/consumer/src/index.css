@@ -1,0 +1,13 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --lab-background: rgb(244, 241, 234);
+  --lab-font-sans: inherit;
+  --labui-primary: rgb(120, 40, 160);
+}
+
+body {
+  font-family: Georgia, serif;
+}

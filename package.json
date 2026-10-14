@@ -1,0 +1,27 @@
+{
+  "name": "labpane-workspace",
+  "private": true,
+  "packageManager": "bun@1.4.2",
+  "workspaces": [
+    "packages/os",
+    "packages/ui",
+    "example"
+  ],
+  "scripts": {
+    "build": "bun run --cwd packages/os build && bun run --cwd packages/ui build",
+    "test": "bun test packages",
+    "lint": "oxlint --deny-warnings",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "check:packages": "publint packages/os && publint packages/ui && attw --pack packages/os --profile esm-only && attw --pack packages/ui --profile esm-only",
+    "changeset": "changeset",
+    "version-packages": "changeset version && bun install --lockfile-only"
+  },
+  "devDependencies": {
+    "@arethetypeswrong/cli": "^0.18.5",
+    "@changesets/cli": "^3.0.3",
+    "oxlint": "^1.87.0",
+    "prettier": "^3.9.10",
+    "publint": "^0.3.25"
+  }
+}
