@@ -163,10 +163,13 @@
   min-width: 0;
 }
 
+/* Tab-row controls line up with the tabs' content, below the slope of the tabs */
 .lab-toolbar-end {
   display: flex;
   flex-shrink: 0;
+  align-self: flex-end;
   align-items: center;
+  height: var(--lab-tab-content-height);
   gap: 0.25rem;
 }
 
@@ -182,6 +185,27 @@
   z-index: 1;
   display: flex;
   align-items: center;
+}
+
+/* In a title bar, the leading and trailing controls centre between the top of the window and the
+   top pane, as the window buttons do, while the tabs and their controls stay on the pane below */
+.lab-workspace[data-title-bar]
+  .lab-pane-header[data-top]
+  .lab-toolbar
+  > :not(.lab-toolbar-tabs, .lab-toolbar-end),
+.lab-workspace[data-title-bar] .lab-trailing > :not(.lab-window-controls) {
+  translate: 0 calc(var(--lab-title-inset) / -2);
+}
+
+/* Room for the traffic lights where the host cannot move them; TrafficLights sizes it otherwise */
+.lab-toolbar[data-leading]:has(> .lab-traffic-lights) {
+  padding-left: 0;
+}
+
+.lab-traffic-lights {
+  flex-shrink: 0;
+  align-self: stretch;
+  width: 72px;
 }
 
 .lab-window-controls {

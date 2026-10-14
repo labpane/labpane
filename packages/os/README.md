@@ -108,12 +108,7 @@ type Layout = Pane | Split;
 To run the workspace in a frameless desktop window (Wails, Tauri, Electron, or your own shell), describe the window as a `WindowHost` and the workspace becomes its title bar:
 
 ```tsx
-import {
-  WindowControls,
-  useFullscreen,
-  useWindowFrame,
-  type WindowHost,
-} from "@labpane/os";
+import { desktopSlots, useWindowFrame, type WindowHost } from "@labpane/os";
 
 const host: WindowHost = {
   platform: "windows", // or "macos" or "linux"
@@ -123,25 +118,25 @@ const host: WindowHost = {
   drag: () => shell.startDrag(), // optional
   resize: (edge) => shell.startResize(edge), // optional, for windows without a native frame
   fullscreen: (on) => shell.setFullscreen(on), // optional
+  trafficLights: (center) => shell.setTrafficLights(center), // optional, macOS
 };
 
 function App() {
-  const [fullscreen] = useFullscreen(host);
   useWindowFrame(host);
   return (
     <Workspace
-      leading={
-        host.platform === "macos" &&
-        !fullscreen && <div style={{ width: 72 }} />
-      }
-      trailing={<WindowControls host={host} />}
+      titleBar
+      {...desktopSlots(host, (align) => <AppMenu align={align} />)}
       // ...
     />
   );
 }
 ```
 
+- `desktopSlots(host, menu)` fills the workspace's `leading` and `trailing` slots for the platform: on macOS, room for the traffic lights first and the menu at the end; elsewhere, the menu first and the window buttons at the end. A function `menu` gets the side it lands on, `"start"` or `"end"`, so a dropdown can open inward. Without a host, the menu just leads.
 - `WindowControls` are Windows-style minimise, maximise, and close buttons, flush in the window's top-right corner and reaching down to the top pane. They hide on macOS, which keeps its own traffic lights, and in full screen.
+- `TrafficLights` keeps room for macOS's traffic lights at the start of the toolbar, and hides on other platforms and in full screen. If the host has `trafficLights`, it calls it with the centre of the title bar, in pixels from the top of the window, whenever that moves, so the shell can centre the buttons there.
+- `titleBar` centres the top row's toolbar controls in the title bar, which runs from the top of the window to the top pane, the same as the window buttons. Without it they centre in the toolbar, below any space the page leaves above the workspace.
 - `useWindowFrame` moves the window when an empty part of a toolbar is dragged, maximises it on a double click, resizes it from its edges, and toggles full screen with F11, or Ctrl+Cmd+F on macOS. Add `data-window-drag` to other elements that should move the window.
 - `useFullscreen(host)` returns `[fullscreen, setFullscreen]`. Without a host it uses the browser's Fullscreen API.
 

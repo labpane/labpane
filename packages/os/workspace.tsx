@@ -46,6 +46,9 @@ export type WorkspaceProps<T extends WorkspaceTab> = {
   onDuplicate?: (key: string) => string;
   leading?: ReactNode;
   trailing?: ReactNode;
+  // titleBar marks the top row of toolbars as a desktop window's title bar, which runs from the
+  // top of the window, so their controls centre in it like the window buttons do
+  titleBar?: boolean;
   toolbar?: (pane: WorkspacePane) => ReactNode;
   menu?: WorkspaceMenu;
   confirmClose?: (tab: T) => boolean | Promise<boolean>;
@@ -82,6 +85,7 @@ function WorkspaceContent<T extends WorkspaceTab>({
   onDuplicate,
   leading,
   trailing,
+  titleBar,
   toolbar,
   menu,
   confirmClose,
@@ -92,7 +96,7 @@ function WorkspaceContent<T extends WorkspaceTab>({
   empty,
 }: WorkspaceProps<T>) {
   const ids = useWorkspaceIds();
-  const { height, logoSize } = useTabSize();
+  const { height, contentHeight, logoSize } = useTabSize();
   const corner = useRef<HTMLDivElement>(null);
   const [reserve, setReserve] = useState(0);
   const hasTrailing = !!trailing;
@@ -104,6 +108,15 @@ function WorkspaceContent<T extends WorkspaceTab>({
     return () => observer.disconnect();
   }, [hasTrailing]);
   const root = useRef<HTMLDivElement>(null);
+  // inset is how far the workspace sits below the top of the window, which is part of the title bar
+  const [inset, setInset] = useState(0);
+  useLayoutEffect(() => {
+    if (!titleBar) return setInset(0);
+    const measure = () => setInset(root.current!.getBoundingClientRect().top);
+    measure();
+    addEventListener("resize", measure);
+    return () => removeEventListener("resize", measure);
+  }, [titleBar]);
   const preferredPane = useRef<string | undefined>(undefined);
   const visibleLayout = reconcileLayout(
     layout,
@@ -160,10 +173,13 @@ function WorkspaceContent<T extends WorkspaceTab>({
         role="region"
         aria-label="Workspace"
         data-density={density}
+        data-title-bar={titleBar || undefined}
         style={
           {
             "--lab-tab-height": `${height}px`,
+            "--lab-tab-content-height": `${contentHeight}px`,
             "--lab-logo-size": `${logoSize}px`,
+            "--lab-title-inset": `${inset}px`,
           } as CSSProperties
         }
         className={className ? `lab-workspace ${className}` : "lab-workspace"}

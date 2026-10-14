@@ -1,0 +1,14 @@
+body {
+  margin: 0;
+  overflow: hidden;
+  background: var(--lab-background);
+}
+
+.demo {
+  box-sizing: border-box;
+  height: 100vh;
+  padding: 6px;
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+}

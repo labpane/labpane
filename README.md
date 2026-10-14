@@ -2,10 +2,10 @@
 
 Workspace UI for researchers
 
-| Package                      | What it is                                                                             |
-| ---------------------------- | -------------------------------------------------------------------------------------- |
-| [`@labpane/os`](packages/os) ([npm link](https://www.npmjs.com/package/@labpane/ui)) | The workspace: tabs, split panes, docking, keyboard navigation. Depends only on React. |
-| [`@labpane/ui`](packages/ui) ([npm link](https://www.npmjs.com/package/@labpane/os)) | Page layouts, forms, dialogs, menus, tables, and an optional terminal, built on Radix. |
+| Package                                                                       | What it is                                                                             |
+| ----------------------------------------------------------------------------- | -------------------------------------------------------------------------------------- |
+| [`@labpane/os`](packages/os) [npm](https://www.npmjs.com/package/@labpane/os) | The workspace: tabs, split panes, docking, keyboard navigation. Depends only on React. |
+| [`@labpane/ui`](packages/ui) [npm](https://www.npmjs.com/package/@labpane/ui) | Page layouts, forms, dialogs, menus, tables, and an optional terminal, built on Radix. |
 
 Both packages:
 

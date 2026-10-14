@@ -267,6 +267,7 @@ export function WorkspaceSurface({
           <div
             key={pane.id}
             data-pane-header={pane.id}
+            data-top={box.y === 0 || undefined}
             className="lab-pane-header"
             style={{
               ...position({ ...box, height: tabHeight }),

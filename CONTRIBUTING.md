@@ -34,6 +34,20 @@ bun run.mjs react18
 
 Arguments after `--` go to Playwright, for example `bun run.mjs react18 -- desktop.spec.ts`.
 
+## Desktop windows
+
+`e2e/desktop` is a small Wails program that opens the built example site in a native window. Its smoke test builds it, opens the window, and checks that the platform's webview loads the site. It needs Go, and on Linux the GTK 3 and WebKitGTK 4.1 development packages and Xvfb:
+
+```sh
+bun run --cwd example build
+bash e2e/desktop/smoke.sh native
+bash e2e/desktop/smoke.sh custom
+```
+
+`native` keeps the system title bar. `custom` opens the example's desktop page in a window without one, the way `desktopSlots` and `titleBar` are meant to be used, and the page checks that the window's controls landed where they belong: the traffic lights' room and the menu at the end on macOS, the menu first and the window buttons in the corner elsewhere.
+
+CI runs it on Linux, macOS, and Windows. Wails is only used by this test; the packages don't depend on it.
+
 ## Guidelines
 
 - `@labpane/os` depends only on React. Keep it that way.

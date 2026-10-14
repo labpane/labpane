@@ -1,18 +1,15 @@
-import {
-  WindowControls,
-  useFullscreen,
-  useWindowFrame,
-  type WindowHost,
-} from "@labpane/os";
+import { desktopSlots, useWindowFrame, type WindowHost } from "@labpane/os";
 import { Demo } from "./workspace";
 
 declare global {
   interface Window {
     calls: string[];
+    lights: number[];
   }
 }
 
 window.calls = [];
+window.lights = [];
 const call = (name: string) => window.calls.push(name);
 const platform = new URLSearchParams(location.search).get(
   "desktop",
@@ -26,18 +23,22 @@ const host: WindowHost = {
   ...(platform !== "macos" && {
     resize: (edge) => call(`resize ${edge}`),
   }),
+  ...(platform === "macos" && {
+    trafficLights: (center) => window.lights.push(center),
+  }),
   fullscreen: (on) => call(`fullscreen ${on}`),
 };
 
 export function DesktopDemo() {
-  const [fullscreen] = useFullscreen(host);
   useWindowFrame(host);
   return (
     <Demo
-      leading={
-        platform === "macos" && !fullscreen && <div style={{ width: 72 }} />
-      }
-      trailing={<WindowControls host={host} />}
+      titleBar
+      {...desktopSlots(host, (align) => (
+        <button type="button" data-align={align}>
+          Menu
+        </button>
+      ))}
     />
   );
 }

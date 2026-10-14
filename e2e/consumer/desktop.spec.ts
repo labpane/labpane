@@ -36,6 +36,12 @@ test("window controls sit in the corner and drive the host", async ({
     lastTab.x + lastTab.width,
   );
   await expect(minimize).toHaveAttribute("tabindex", "-1");
+  await expect(page.locator(".lab-traffic-lights")).toHaveCount(0);
+  const menu = page.getByRole("button", { name: "Menu", exact: true });
+  await expect(menu).toHaveAttribute("data-align", "start");
+  const firstTab = (await page.getByRole("tab").first().boundingBox())!;
+  const menuBox = (await menu.boundingBox())!;
+  expect(menuBox.x + menuBox.width).toBeLessThan(firstTab.x);
 
   for (const [name, expected] of [
     ["Minimize", "minimize"],
@@ -84,6 +90,36 @@ test("macOS keeps its traffic lights and native resizing", async ({ page }) => {
     (await page.getByRole("tab").first().boundingBox())!.x,
   ).toBeGreaterThan(72);
 
+  // The lights centre on the title bar, from the top of the window to the top pane, and the tabs
+  // start as far after them as they are from the window's edge
+  const toolbar = (await page.locator(".lab-toolbar").first().boundingBox())!;
+  const bottom = toolbar.y + toolbar.height;
+  await expect
+    .poll(() => page.evaluate(() => window.lights.at(-1)))
+    .toBeCloseTo(bottom / 2, 0);
+  const tabs = (await page.locator(".lab-toolbar-tabs").first().boundingBox())!;
+  expect(tabs.x).toBeCloseTo(bottom + 46, 0);
+  const inset = await page
+    .locator(".lab-workspace")
+    .evaluate((element) => element.getBoundingClientRect().top);
+  expect(
+    await page
+      .locator(".lab-workspace")
+      .evaluate((element) =>
+        getComputedStyle(element).getPropertyValue("--lab-title-inset"),
+      ),
+  ).toBe(`${inset}px`);
+  const lights = (await page.locator(".lab-traffic-lights").boundingBox())!;
+  expect(lights.y).toBeCloseTo(toolbar.y - inset / 2, 0);
+
+  // The menu moves to the end, clear of the traffic lights
+  const menu = page.getByRole("button", { name: "Menu", exact: true });
+  await expect(menu).toHaveAttribute("data-align", "end");
+  const lastTab = (await page.getByRole("tab").last().boundingBox())!;
+  expect((await menu.boundingBox())!.x).toBeGreaterThan(
+    lastTab.x + lastTab.width,
+  );
+
   await page.mouse.move(2, 400);
   await page.mouse.down();
   await page.mouse.up();
@@ -95,4 +131,13 @@ test("macOS keeps its traffic lights and native resizing", async ({ page }) => {
   await page.keyboard.press("F11");
   await page.keyboard.press("Control+Meta+f");
   expect(await calls(page)).toEqual(["drag", "fullscreen true"]);
+});
+
+test("macOS gives back the traffic lights' room in full screen", async ({
+  page,
+}) => {
+  await page.goto("?page=desktop&desktop=macos");
+  await expect(page.locator(".lab-traffic-lights")).toHaveCount(1);
+  await page.setViewportSize({ width: 1920, height: 1080 });
+  await expect(page.locator(".lab-traffic-lights")).toHaveCount(0);
 });
