@@ -1,6 +1,6 @@
 {
   "name": "@labpane/ui",
-  "version": "1.0.0",
+  "version": "1.2.0",
   "description": "Page layouts, forms, dialogs, menus, tables, and an optional terminal for React",
   "license": "MIT",
   "homepage": "https://labpane.com",
