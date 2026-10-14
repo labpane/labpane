@@ -1,11 +1,11 @@
 # Labpane
 
-Browser-tab workspaces for React: tabs you can drag, split, and dock into resizable panes, plus an optional UI kit for building the pages that live in them.
+Workspace UI for researchers
 
 | Package                      | What it is                                                                             |
 | ---------------------------- | -------------------------------------------------------------------------------------- |
-| [`@labpane/os`](packages/os) | The workspace: tabs, split panes, docking, keyboard navigation. Depends only on React. |
-| [`@labpane/ui`](packages/ui) | Page layouts, forms, dialogs, menus, tables, and an optional terminal, built on Radix. |
+| [`@labpane/os`](packages/os) ([npm link](https://www.npmjs.com/package/@labpane/ui)) | The workspace: tabs, split panes, docking, keyboard navigation. Depends only on React. |
+| [`@labpane/ui`](packages/ui) ([npm link](https://www.npmjs.com/package/@labpane/os)) | Page layouts, forms, dialogs, menus, tables, and an optional terminal, built on Radix. |
 
 Both packages:
 
