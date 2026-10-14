@@ -234,7 +234,7 @@ export function Home() {
               </p>
               <ul className="package-links">
                 <li>
-                  <a href="palette/#colors">See every colour token</a>
+                  <a href="palette/#colors">See every color token</a>
                 </li>
               </ul>
             </div>

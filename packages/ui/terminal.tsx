@@ -14,7 +14,7 @@ import {
   RotateCwIcon,
   XIcon,
 } from "lucide-react";
-import { Button } from "./primitives.js";
+import { Button } from "./button.js";
 
 export type TerminalTheme = {
   foreground: number;

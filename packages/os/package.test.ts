@@ -6,5 +6,5 @@ testPackage(import.meta.dir, {
     react: "^18.2.0 || ^19.0.0",
     "react-dom": "^18.2.0 || ^19.0.0",
   },
-  budget: 14_500,
+  budget: 16_000,
 });

@@ -69,11 +69,19 @@ test("the menu opens from the app's trigger and Escape returns focus", async ({
   await expect(trigger).toBeFocused();
 });
 
-test("the checkbox and table respond to input", async ({ page }) => {
+test("the checkbox, switch, tabs and table respond to input", async ({
+  page,
+}) => {
   const checkbox = page.getByRole("checkbox", { name: "Enabled" });
   await checkbox.click();
   await expect(checkbox).toHaveAttribute("data-state", "checked");
   await expect(checkbox).toHaveCSS("background-color", "rgb(120, 40, 160)");
+  const toggle = page.getByRole("switch", { name: "Notify" });
+  await toggle.click();
+  await expect(toggle).toHaveAttribute("data-state", "checked");
+  await page.getByRole("tab", { name: "Log" }).click();
+  await expect(page.getByText("Nothing logged yet.")).toBeVisible();
+  await page.getByRole("tab", { name: "Rooms" }).click();
   const table = page.getByRole("table", { name: "Rooms" });
   await table.getByRole("button", { name: "Size" }).click();
   await expect(table.getByRole("row").nth(1)).toContainText("beta");

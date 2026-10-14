@@ -69,6 +69,20 @@ export function useWorkspaceIds() {
     panel: (key: string) => `${prefix}-panel-${encodeURIComponent(key)}`,
   };
 }
+// TabLinks holds each tab's link by key, so focus moves without looking ids up in the document
+export const TabLinks = createContext(new Map<string, HTMLElement>());
+export function useTabLinks() {
+  const links = useContext(TabLinks);
+  return {
+    register: (key: string) => (element: HTMLElement | null) => {
+      if (element) links.set(key, element);
+      else links.delete(key);
+    },
+    get: (key: string) => links.get(key),
+    focus: (key: string) =>
+      requestAnimationFrame(() => links.get(key)?.focus()),
+  };
+}
 
 export type WorkspaceAction = {
   label: string;

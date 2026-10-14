@@ -5,15 +5,18 @@ import {
   useId,
   useState,
   type ComponentProps,
-  type ReactNode,
 } from "react";
+import * as DialogPrimitive from "@radix-ui/react-dialog";
 import * as DropdownMenu from "@radix-ui/react-dropdown-menu";
 import {
   CircleAlertIcon,
+  CircleCheckIcon,
   DownloadIcon,
   FileIcon,
   FolderIcon,
   InfoIcon,
+  KeyboardIcon,
+  LogOutIcon,
   PlusIcon,
   SaveIcon,
   SettingsIcon,
@@ -28,6 +31,7 @@ import {
   AlertDescription,
   AlertTitle,
   AppMenu,
+  AppMenuSection,
   Back,
   Badge,
   Button,
@@ -40,6 +44,8 @@ import {
   DialogDescription,
   DialogFooter,
   DialogHeader,
+  DialogOverlay,
+  DialogPortal,
   DialogTitle,
   DialogTrigger,
   DiscardDialog,
@@ -51,7 +57,11 @@ import {
   OptionMenu,
   Page,
   PageActions,
+  PageDescription,
+  PageEyebrow,
   PageHeader,
+  PageHeaderText,
+  PageTitle,
   Select,
   SelectContent,
   SelectField,
@@ -60,104 +70,57 @@ import {
   SelectValue,
   Skeleton,
   Spinner,
-  Table,
   TextField,
-  column,
-  mono,
-  num,
   type MenuAction,
 } from "@labpane/ui";
 import { Logo, SiteFooter, SiteHeader } from "../site";
 import { setDark, useDark } from "../theme";
-import { ColourTokens, OtherTokens } from "./tokens";
+import {
+  FlameGraphs,
+  Histograms,
+  TimeSeries,
+  TimingTracksDemo,
+} from "./charts";
+import {
+  FieldSets,
+  InputGroups,
+  NativeSelects,
+  SearchInputs,
+  Switches,
+  Textareas,
+  Toggles,
+} from "./controls";
+import {
+  Avatars,
+  Breadcrumbs,
+  Cards,
+  EmailThreads,
+  Empties,
+  KbdDemo,
+  NavTabsDemo,
+  StatsDemo,
+  TabsDemo,
+} from "./display";
+import {
+  BrowserLayouts,
+  Rails,
+  SettingsDemo,
+  SidePanels,
+  Sidebars,
+} from "./layouts";
+import { Commands, DropdownMenus, Sheets, Tooltips } from "./overlays";
+import { Labelled, Section, Specimen, sections } from "./section";
+import { Tables, TableScreens } from "./tables";
+import { ThemeSwitcher } from "./themes";
+import { ColorTokens, OtherTokens } from "./tokens";
 
 const TerminalDemo = lazy(() => import("./terminal-demo"));
-
-const sections = [
-  ["colors", "Colours"],
-  ["button", "Button"],
-  ["badge", "Badge"],
-  ["alert", "Alert"],
-  ["input", "Input"],
-  ["checkbox", "Checkbox"],
-  ["select", "Select"],
-  ["field", "Field"],
-  ["form-fields", "TextField and SelectField"],
-  ["feedback", "Spinner and Skeleton"],
-  ["copy", "CopyButton"],
-  ["page", "Page"],
-  ["dialog", "Dialog"],
-  ["confirm", "ConfirmDialog and DiscardDialog"],
-  ["menus", "Menus"],
-  ["table", "Table"],
-  ["app-menu", "AppMenu"],
-  ["terminal", "Terminal"],
-] as const;
-
-type Id = (typeof sections)[number][0];
-
-function Section({
-  id,
-  intro,
-  children,
-}: {
-  id: Id;
-  intro?: ReactNode;
-  children: ReactNode;
-}) {
-  const title = sections.find(([key]) => key === id)![1];
-  return (
-    <section
-      id={id}
-      className="palette-section"
-      aria-labelledby={`${id}-title`}
-    >
-      <h2 id={`${id}-title`}>{title}</h2>
-      {intro && <p className="palette-intro">{intro}</p>}
-      {children}
-    </section>
-  );
-}
-
-function Specimen({
-  label,
-  children,
-  stack,
-}: {
-  label: ReactNode;
-  children: ReactNode;
-  stack?: boolean;
-}) {
-  return (
-    <div className="specimen">
-      <div className="specimen-label">{label}</div>
-      <div className={stack ? "specimen-body specimen-stack" : "specimen-body"}>
-        {children}
-      </div>
-    </div>
-  );
-}
-
-function Labelled({
-  label,
-  children,
-}: {
-  label: string;
-  children: (id: string) => ReactNode;
-}) {
-  const id = useId();
-  return (
-    <Field>
-      <FieldLabel htmlFor={id}>{label}</FieldLabel>
-      {children(id)}
-    </Field>
-  );
-}
 
 function Buttons() {
   const variants = [
     "default",
     "secondary",
+    "outline",
     "destructive",
     "ghost",
     "link",
@@ -167,7 +130,7 @@ function Buttons() {
       id="button"
       intro={
         <>
-          Five variants and four sizes. <code>asChild</code> renders the styles
+          Six variants and eight sizes. <code>asChild</code> renders the styles
           on your own element, such as a link.
         </>
       }
@@ -208,13 +171,29 @@ function Buttons() {
           </a>
         </Button>
       </Specimen>
-      <Specimen label='size="default" | "sm" | "icon-sm" | "icon-xs"'>
-        <Button>Default</Button>
-        <Button size="sm">Small</Button>
-        <Button size="icon-sm" aria-label="Add">
+      <Specimen label='size="xs" | "sm" | "default" | "lg"'>
+        <Button variant="outline" size="xs">
+          Extra small
+        </Button>
+        <Button variant="outline" size="sm">
+          Small
+        </Button>
+        <Button variant="outline">Default</Button>
+        <Button variant="outline" size="lg">
+          Large
+        </Button>
+      </Specimen>
+      <Specimen label='size="icon-xs" | "icon-sm" | "icon" | "icon-lg"'>
+        <Button variant="outline" size="icon-xs" aria-label="Add">
           <PlusIcon />
         </Button>
-        <Button size="icon-xs" aria-label="Add">
+        <Button variant="outline" size="icon-sm" aria-label="Add">
+          <PlusIcon />
+        </Button>
+        <Button variant="outline" size="icon" aria-label="Add">
+          <PlusIcon />
+        </Button>
+        <Button variant="outline" size="icon-lg" aria-label="Add">
           <PlusIcon />
         </Button>
       </Specimen>
@@ -225,11 +204,21 @@ function Buttons() {
 function Badges() {
   return (
     <Section id="badge">
-      <Specimen label='variant="default" | "success" | "warning" | "destructive"'>
+      <Specimen label='variant="default" | "secondary" | "success" | "warning" | "destructive" | "info"'>
         <Badge>Default</Badge>
+        <Badge variant="secondary">Secondary</Badge>
         <Badge variant="success">Success</Badge>
         <Badge variant="warning">Warning</Badge>
         <Badge variant="destructive">Destructive</Badge>
+        <Badge variant="info">Info</Badge>
+      </Specimen>
+      <Specimen label='variant="outline" | "ghost" | "link", and asChild on a link'>
+        <Badge variant="outline">Outline</Badge>
+        <Badge variant="ghost">Ghost</Badge>
+        <Badge variant="link">Link</Badge>
+        <Badge variant="link" asChild>
+          <a href="#badge">Open the report</a>
+        </Badge>
       </Specimen>
       <Specimen label="With an icon">
         <Badge variant="success">
@@ -262,12 +251,21 @@ function Alerts() {
       }
     >
       <div className="specimen-grid specimen-grid-wide">
-        <Specimen label="No variant" stack>
-          <Alert>
+        <Specimen label='variant="default"' stack>
+          <Alert variant="default">
             <InfoIcon />
             <AlertTitle>Workspace saved</AlertTitle>
             <AlertDescription>
               Your tabs and layout are stored.
+            </AlertDescription>
+          </Alert>
+        </Specimen>
+        <Specimen label='variant="success"' stack>
+          <Alert variant="success">
+            <CircleCheckIcon />
+            <AlertTitle>Run 045 finished</AlertTitle>
+            <AlertDescription>
+              All 1,284 samples passed the quality checks.
             </AlertDescription>
           </Alert>
         </Specimen>
@@ -372,7 +370,20 @@ const fruit = [
   { id: "plum", name: "Plum" },
 ];
 
+const instruments = [
+  { id: "hplc", name: "HPLC", hint: "Calibrated three days ago" },
+  { id: "gc", name: "Gas chromatography", hint: "Calibrated two weeks ago" },
+  { id: "nmr", name: "NMR", hint: "Booked until Friday" },
+];
+
+const owners = [
+  { id: "", name: "No owner" },
+  { id: "mara", name: "Mara Okafor" },
+  { id: "jonas", name: "Jonas Lindqvist" },
+];
+
 function Selects() {
+  const [owner, setOwner] = useState("");
   return (
     <Section
       id="select"
@@ -477,6 +488,77 @@ function Selects() {
             )}
           </Labelled>
         </div>
+      </Specimen>
+      <Specimen label="Trigger variant, item hints, an empty value, and side">
+        <div className="specimen-grid">
+          <Labelled label='SelectTrigger variant="ghost"'>
+            {(id) => (
+              <div>
+                <Select defaultValue="week">
+                  <SelectTrigger id={id} variant="ghost" size="sm">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="day">Today</SelectItem>
+                    <SelectItem value="week">This week</SelectItem>
+                    <SelectItem value="month">This month</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
+          </Labelled>
+          <Labelled label="SelectItem with a hint">
+            {(id) => (
+              <Select defaultValue="hplc">
+                <SelectTrigger id={id}>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {instruments.map((item) => (
+                    <SelectItem key={item.id} value={item.id} hint={item.hint}>
+                      {item.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            )}
+          </Labelled>
+          <Labelled label='An option whose value is ""'>
+            {(id) => (
+              <Select value={owner} onValueChange={setOwner}>
+                <SelectTrigger id={id}>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {owners.map((item) => (
+                    <SelectItem key={item.id} value={item.id}>
+                      {item.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            )}
+          </Labelled>
+          <Labelled label='SelectContent side="top"'>
+            {(id) => (
+              <Select defaultValue="pear">
+                <SelectTrigger id={id}>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent side="top">
+                  {fruit.map((item) => (
+                    <SelectItem key={item.id} value={item.id}>
+                      {item.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            )}
+          </Labelled>
+        </div>
+        <span className="muted" role="status">
+          Owner value: {owner ? `"${owner}"` : '""'}
+        </span>
       </Specimen>
     </Section>
   );
@@ -649,8 +731,10 @@ function Pages() {
       id="page"
       intro={
         <>
-          <code>Page</code> stacks a <code>PageHeader</code> (an <code>h1</code>{" "}
-          and its <code>PageActions</code>) above your content.{" "}
+          <code>Page</code> stacks a <code>PageHeader</code> above your content.
+          The header takes an <code>eyebrow</code>, a <code>title</code>, a{" "}
+          <code>description</code>, something <code>leading</code>, and{" "}
+          <code>actions</code>; its parts are exported for headers of your own.{" "}
           <code>Back</code> is a link back to a parent page.
         </>
       }
@@ -671,10 +755,20 @@ function Pages() {
           </Page>
         </div>
       </Specimen>
-      <Specimen label="PageHeader with actions" stack>
+      <Specimen
+        label="PageHeader with eyebrow, description, leading, and actions"
+        stack
+      >
         <div className="page-sample">
           <PageHeader
-            title="Reports"
+            eyebrow="Project"
+            title="Coastal survey"
+            description="42 datasets, last updated yesterday"
+            leading={
+              <Button variant="secondary" size="icon" aria-label="Open folder">
+                <FolderIcon />
+              </Button>
+            }
             actions={
               <>
                 <Button variant="ghost">Export</Button>
@@ -684,10 +778,32 @@ function Pages() {
           />
         </div>
       </Specimen>
-      <Specimen label="PageActions in a header of your own" stack>
+      <Specimen label='PageHeader variant="bar"' stack>
+        <div className="page-sample page-sample-flush">
+          <PageHeader
+            variant="bar"
+            title="Datasets"
+            description="Everything the survey has collected"
+            actions={
+              <Button size="sm">
+                <PlusIcon />
+                New dataset
+              </Button>
+            }
+          />
+        </div>
+      </Specimen>
+      <Specimen
+        label="PageHeaderText, PageEyebrow, PageTitle, PageDescription, and PageActions in a header of your own"
+        stack
+      >
         <div className="page-sample">
           <div className="custom-header">
-            <span className="custom-header-title">3 tabs selected</span>
+            <PageHeaderText>
+              <PageEyebrow>Selection</PageEyebrow>
+              <PageTitle>3 tabs selected</PageTitle>
+              <PageDescription>Close them, or keep working.</PageDescription>
+            </PageHeaderText>
             <PageActions>
               <Button variant="ghost">Cancel</Button>
               <Button variant="destructive">Close tabs</Button>
@@ -696,6 +812,53 @@ function Pages() {
         </div>
       </Specimen>
     </Section>
+  );
+}
+
+function BusyDialog() {
+  const [open, setOpen] = useState(false);
+  const [busy, setBusy] = useState(false);
+  useEffect(() => {
+    if (!busy) return;
+    const timer = setTimeout(() => setBusy(false), 1800);
+    return () => clearTimeout(timer);
+  }, [busy]);
+  return (
+    <Dialog
+      open={open}
+      onOpenChange={(next) => {
+        setOpen(next);
+        setBusy(next);
+      }}
+    >
+      <DialogTrigger asChild>
+        <Button variant="secondary">Export datasets</Button>
+      </DialogTrigger>
+      <DialogContent busy={busy}>
+        <DialogHeader>
+          <DialogTitle>
+            {busy ? "Exporting three datasets" : "Export complete"}
+          </DialogTitle>
+          <DialogDescription>
+            {busy
+              ? "While busy, the dialog has no close button and ignores Escape and clicks outside."
+              : "The archive is ready to download."}
+          </DialogDescription>
+        </DialogHeader>
+        <DialogFooter showCloseButton={!busy}>
+          {busy ? (
+            <span className="inline-status">
+              <Spinner /> Packing files
+            </span>
+          ) : (
+            <Button>
+              <DownloadIcon />
+              Download
+            </Button>
+          )}
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 }
 
@@ -711,7 +874,10 @@ function Dialogs() {
           <code>Dialog</code> with <code>DialogTrigger</code>,{" "}
           <code>DialogContent</code>, <code>DialogHeader</code>,{" "}
           <code>DialogTitle</code>, <code>DialogDescription</code>,{" "}
-          <code>DialogFooter</code>, and <code>DialogClose</code>.
+          <code>DialogFooter</code>, and <code>DialogClose</code>. A{" "}
+          <code>busy</code> content cannot be dismissed;{" "}
+          <code>DialogPortal</code> and <code>DialogOverlay</code> are there for
+          content of your own.
         </>
       }
     >
@@ -772,6 +938,31 @@ function Dialogs() {
           </DialogContent>
         </Dialog>
       </Specimen>
+      <Specimen label="busy, then DialogFooter with showCloseButton">
+        <BusyDialog />
+      </Specimen>
+      <Specimen label="DialogPortal and DialogOverlay around content of your own">
+        <Dialog>
+          <DialogTrigger asChild>
+            <Button variant="ghost">A panel of your own</Button>
+          </DialogTrigger>
+          <DialogPortal>
+            <DialogOverlay />
+            <DialogPrimitive.Content className="custom-dialog">
+              <DialogTitle>Quick note</DialogTitle>
+              <DialogDescription>
+                Only the portal and the overlay come from the package; this
+                panel is styled by the page.
+              </DialogDescription>
+              <DialogFooter>
+                <DialogClose asChild>
+                  <Button size="sm">Done</Button>
+                </DialogClose>
+              </DialogFooter>
+            </DialogPrimitive.Content>
+          </DialogPortal>
+        </Dialog>
+      </Specimen>
     </Section>
   );
 }
@@ -780,15 +971,16 @@ function Confirms() {
   const [deleted, setDeleted] = useState<string[]>([]);
   const [discard, setDiscard] = useState<string>();
   const [result, setResult] = useState("");
+  const [done, setDone] = useState("");
   return (
     <Section
       id="confirm"
       intro={
         <>
-          <code>ConfirmDialog</code> guards a destructive action, optionally
-          until the name is typed. <code>DiscardDialog</code> asks before a tab
-          with unsaved changes closes; it’s what a workspace’s{" "}
-          <code>confirmClose</code> can show.
+          <code>ConfirmDialog</code> guards an action, optionally until a word
+          is typed; its <code>tone</code> is destructive unless told otherwise.{" "}
+          <code>DiscardDialog</code> asks before a tab with unsaved changes
+          closes; it’s what a workspace’s <code>confirmClose</code> can show.
         </>
       }
     >
@@ -824,6 +1016,47 @@ function Confirms() {
         />
         <span className="muted" role="status">
           {deleted.length ? `Deleted: ${deleted.join(", ")}` : ""}
+        </span>
+      </Specimen>
+      <Specimen label='confirmation with match="exact" | "loose", tone="default", and warning'>
+        <ConfirmDialog
+          trigger={<Button variant="destructive">Delete 14 runs</Button>}
+          title="Delete 14 runs"
+          description="The runs and their measurements are removed from the archive."
+          confirmLabel="Delete runs"
+          confirmation={{ value: "DELETE", label: "Type DELETE to continue" }}
+          onConfirm={async () => setDone("Deleted 14 runs")}
+        />
+        <ConfirmDialog
+          trigger={<Button variant="secondary">Archive project</Button>}
+          title="Archive"
+          name="Coastal survey"
+          description="Archived projects are read only until restored."
+          confirmLabel="Archive"
+          confirmation={{
+            value: "Coastal survey",
+            label: "Project name",
+            placeholder: "Case and spaces are forgiven",
+            match: "loose",
+          }}
+          onConfirm={async () => setDone("Archived Coastal survey")}
+        />
+        <ConfirmDialog
+          trigger={<Button>Publish dataset</Button>}
+          title="Publish"
+          name="reef-transects-2026"
+          tone="default"
+          description="Publishing makes the dataset visible to every lab member."
+          warning="Published datasets cannot be made private again."
+          confirmLabel="Publish"
+          pendingLabel="Publishing"
+          onConfirm={async () => {
+            await new Promise((resolve) => setTimeout(resolve, 600));
+            setDone("Published reef-transects-2026");
+          }}
+        />
+        <span className="muted" role="status">
+          {done}
         </span>
       </Specimen>
       <Specimen label="DiscardDialog">
@@ -944,88 +1177,27 @@ function Menus() {
   );
 }
 
-type Row = { name: string; tabs: number; size: number; path: string };
-const rows: Row[] = [
-  { name: "Inbox", tabs: 4, size: 12.5, path: "/inbox" },
-  { name: "Reports", tabs: 12, size: 3.25, path: "/reports" },
-  { name: "Settings", tabs: 1, size: 0.75, path: "/settings" },
-  { name: "Terminal", tabs: 2, size: 48, path: "/terminal" },
-];
-const columns = [
-  { ...column<Row>("name", "Name", (row) => row.name), rowHeader: true },
-  mono<Row>("path", "Path", (row) => row.path),
-  num<Row>("tabs", "Tabs", (row) => row.tabs),
-  num<Row>("size", "Size", (row) => row.size, 2, "MB"),
-];
-
-function Tables() {
-  const [opened, setOpened] = useState("");
-  return (
-    <Section
-      id="table"
-      intro={
-        <>
-          Sortable columns built with <code>column</code>, <code>mono</code>,
-          and <code>num</code>. Click a header to sort.
-        </>
-      }
-    >
-      <Specimen label="Sortable, with defaultSort and onRowActivate" stack>
-        <Table
-          label="Workspaces"
-          rows={rows}
-          rowKey={(row) => row.name}
-          columns={columns}
-          defaultSort={{ column: "tabs", direction: "desc" }}
-          onRowActivate={(row) => setOpened(row.name)}
-          rowLabel={(row) => `Open ${row.name}`}
-        />
-        <span className="muted" role="status">
-          {opened && `Opened: ${opened}`}
-        </span>
-      </Specimen>
-      <div className="specimen-grid specimen-grid-wide">
-        <Specimen label="loading" stack>
-          <Table
-            label="Loading workspaces"
-            rows={[]}
-            rowKey={(row) => row.name}
-            columns={columns}
-            loading
-          />
-        </Specimen>
-        <Specimen label="Empty" stack>
-          <Table
-            label="No workspaces"
-            rows={[]}
-            rowKey={(row) => row.name}
-            columns={columns}
-            empty="No workspaces yet."
-          />
-        </Specimen>
-      </div>
-    </Section>
-  );
-}
-
 function AppMenus() {
   const dark = useDark();
   const [size, setSize] = useState(100);
   const [fullscreen, setFullscreen] = useFullscreen();
+  const [chosen, setChosen] = useState("");
   return (
     <Section
       id="app-menu"
       intro={
         <>
           The logo menu for a workspace’s <code>leading</code> slot: theme,
-          size, and full screen. Right-click the size button to reset it.
+          size, and full screen, then the app’s own items in{" "}
+          <code>AppMenuSection</code>s. Right-click the size button to reset it.
         </>
       }
     >
-      <Specimen label="AppMenu">
+      <Specimen label="AppMenu with a version and an AppMenuSection">
         <AppMenu
           name="Labpane"
           logo={<Logo />}
+          version="1.0.0"
           dark={dark}
           onThemeChange={setDark}
           size={size}
@@ -1033,8 +1205,32 @@ function AppMenus() {
           onSizeReset={() => setSize(100)}
           fullscreen={fullscreen}
           onFullscreenChange={setFullscreen}
-        />
+        >
+          <AppMenuSection title="Workspace">
+            <Button
+              variant="ghost"
+              size="sm"
+              className="app-menu-item"
+              onClick={() => setChosen("Keyboard shortcuts")}
+            >
+              <KeyboardIcon />
+              Keyboard shortcuts
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="app-menu-item"
+              onClick={() => setChosen("Sign out")}
+            >
+              <LogOutIcon />
+              Sign out
+            </Button>
+          </AppMenuSection>
+        </AppMenu>
         <span className="muted">Size: {Math.round(size)}</span>
+        <span className="muted" role="status">
+          {chosen && `Chose: ${chosen}`}
+        </span>
       </Specimen>
     </Section>
   );
@@ -1090,10 +1286,11 @@ export function Palette() {
           <header className="palette-header">
             <h1>Palette</h1>
             <p>
-              Every component <code>@labpane/ui</code> exports, in each variant,
-              size, and state, and the colour tokens of both packages. Switch
-              the theme at the top to compare light and dark.
+              Every component <code>@labpane/ui</code> exports, in its variants,
+              sizes, and states, and the color tokens of both packages. Switch
+              between light and dark at the top, or try a sample theme here.
             </p>
+            <ThemeSwitcher />
             <details className="palette-jump">
               <summary>Jump to a section</summary>
               <nav aria-label="Sections">
@@ -1120,11 +1317,11 @@ export function Palette() {
             <h3 className="palette-subheading">
               <code>@labpane/ui</code>: <code>--labui-*</code>
             </h3>
-            <ColourTokens prefix="--labui-" label="@labpane/ui" />
+            <ColorTokens prefix="--labui-" label="@labpane/ui" />
             <h3 className="palette-subheading">
               <code>@labpane/os</code>: <code>--lab-*</code>
             </h3>
-            <ColourTokens prefix="--lab-" label="@labpane/os" />
+            <ColorTokens prefix="--lab-" label="@labpane/os" />
             <h3 className="palette-subheading">Fonts and sizes</h3>
             <OtherTokens />
           </Section>
@@ -1133,17 +1330,47 @@ export function Palette() {
           <Badges />
           <Alerts />
           <Inputs />
+          <Textareas />
+          <NativeSelects />
           <Checkboxes />
+          <Switches />
+          <Toggles />
           <Selects />
+          <InputGroups />
+          <SearchInputs />
           <Fields />
+          <FieldSets />
           <FormFields />
           <Feedback />
           <Copy />
+          <KbdDemo />
+          <Avatars />
+          <Breadcrumbs />
+          <Cards />
+          <Empties />
+          <StatsDemo />
+          <TabsDemo />
+          <NavTabsDemo />
           <Pages />
           <Dialogs />
           <Confirms />
+          <Sheets />
+          <Tooltips />
           <Menus />
+          <DropdownMenus />
+          <Commands />
           <Tables />
+          <TableScreens />
+          <EmailThreads />
+          <Sidebars />
+          <Rails />
+          <SettingsDemo />
+          <SidePanels />
+          <BrowserLayouts />
+          <TimeSeries />
+          <Histograms />
+          <FlameGraphs />
+          <TimingTracksDemo />
           <AppMenus />
 
           <Section

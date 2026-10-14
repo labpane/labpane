@@ -5,9 +5,10 @@ import { testPackage } from "../testing.js";
 import { cn } from "./classes.js";
 
 testPackage(import.meta.dir, {
-  dependencies: ["clsx", "lucide-react", "tailwind-merge"],
+  dependencies: ["clsx", "cmdk", "lucide-react", "tailwind-merge"],
   peers: {
     "@radix-ui/react-alert-dialog": "^1.1.15",
+    "@radix-ui/react-avatar": "^1.2.7",
     "@radix-ui/react-checkbox": "^1.3.3",
     "@radix-ui/react-context-menu": "^2.2.16",
     "@radix-ui/react-dialog": "^1.1.15",
@@ -15,12 +16,17 @@ testPackage(import.meta.dir, {
     "@radix-ui/react-popover": "^1.1.15",
     "@radix-ui/react-select": "^2.2.6",
     "@radix-ui/react-slot": "^1.2.3",
+    "@radix-ui/react-switch": "^1.3.8",
+    "@radix-ui/react-tabs": "^1.1.22",
+    "@radix-ui/react-toggle": "^1.1.19",
+    "@radix-ui/react-toggle-group": "^1.1.20",
+    "@radix-ui/react-tooltip": "^1.3.0",
     "@wterm/dom": "^0.5.4",
     react: "^18.2.0 || ^19.0.0",
     "react-dom": "^18.2.0 || ^19.0.0",
   },
   entries: ["index.ts", "terminal.tsx"],
-  budget: 24_000,
+  budget: 96_000,
 });
 
 it("lets callers' classes replace the defaults they conflict with", () => {

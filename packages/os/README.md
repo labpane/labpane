@@ -67,6 +67,10 @@ Each tab is a `WorkspaceTab`:
 
 Tabs whose content has unsaved changes call `useUnsavedChanges(true)`. Closing one asks first: through `confirmClose` if you pass it, and the browser's `confirm` otherwise. The page also warns before unloading.
 
+## Inside a tab
+
+Background tabs stay mounted, so a tab's content asks where it stands: `useTabActive()` is true for the tab in front of the focused pane and `useTabVisible()` for every tab on screen, including split panes (`useTabVisibleRef()` for listeners, `useShownOnce(visible)` to mount once). Gate polling, intervals, window listeners, and portaled overlays on them; redraw charts and canvases from a `ResizeObserver` on their own element and skip zero width; pause media when its tab is no longer visible. `useLeaveTab()` returns a function that closes the tab and returns to the tab it was opened from. With the `history` prop, each tab keeps its own history behind the browser's Back and Forward, starting at its `href`: `useTabHistory()` gives `{ path, canGoBack, canGoForward, navigate, back, forward }`. `hasOpenOverlay()` is true while a dialog, menu, listbox, or full-screen element is open, and the workspace's shortcuts wait for it.
+
 ## Slots
 
 The workspace renders no menus or buttons of its own. You fill these slots with your own components, or with `@labpane/ui`:

@@ -47,6 +47,25 @@
   --labui-input-background: #eeeeee;
   --labui-ring: #1d9db4;
   --labui-overlay: color-mix(in srgb, #242424 18%, transparent);
+  --labui-info: #1e5aa8;
+  --labui-info-foreground: #ffffff;
+  --labui-chart-1: #05697a;
+  --labui-chart-2: #1d9db4;
+  --labui-chart-3: #116d3b;
+  --labui-chart-4: #b8741a;
+  --labui-chart-5: #7a4ea0;
+  --labui-sidebar: #f6f6f6;
+  --labui-sidebar-foreground: #242424;
+  --labui-sidebar-primary: #05697a;
+  --labui-sidebar-primary-foreground: #ffffff;
+  --labui-sidebar-accent: #e6e6e6;
+  --labui-sidebar-accent-foreground: #242424;
+  --labui-sidebar-border: #d6d6d6;
+  --labui-sidebar-ring: #1d9db4;
+  --labui-card-gap: 1.5rem;
+  --labui-card-px: 1.5rem;
+  --labui-card-py: 1.5rem;
+  --labui-topbar-height: 3rem;
 }
 
 :where(.dark) {
@@ -77,6 +96,21 @@
   --labui-input-background: #242424;
   --labui-ring: #68bccf;
   --labui-overlay: color-mix(in srgb, #000000 50%, transparent);
+  --labui-info: #7fb4f0;
+  --labui-info-foreground: #0c2340;
+  --labui-chart-1: #68bccf;
+  --labui-chart-2: #1d9db4;
+  --labui-chart-3: #3ddc84;
+  --labui-chart-4: #e0a84a;
+  --labui-chart-5: #b58ce0;
+  --labui-sidebar: #202020;
+  --labui-sidebar-foreground: #e8e8e8;
+  --labui-sidebar-primary: #68bccf;
+  --labui-sidebar-primary-foreground: #1c1c1c;
+  --labui-sidebar-accent: #363636;
+  --labui-sidebar-accent-foreground: #f3f3f3;
+  --labui-sidebar-border: #363636;
+  --labui-sidebar-ring: #68bccf;
 }
 
 @media (forced-colors: active) {
@@ -121,12 +155,101 @@
   --color-input-background: var(--labui-input-background);
   --color-ring: var(--labui-ring);
   --color-overlay: var(--labui-overlay);
+  --color-info: var(--labui-info);
+  --color-info-foreground: var(--labui-info-foreground);
+  --color-chart-1: var(--labui-chart-1);
+  --color-chart-2: var(--labui-chart-2);
+  --color-chart-3: var(--labui-chart-3);
+  --color-chart-4: var(--labui-chart-4);
+  --color-chart-5: var(--labui-chart-5);
+  --color-sidebar: var(--labui-sidebar);
+  --color-sidebar-foreground: var(--labui-sidebar-foreground);
+  --color-sidebar-primary: var(--labui-sidebar-primary);
+  --color-sidebar-primary-foreground: var(--labui-sidebar-primary-foreground);
+  --color-sidebar-accent: var(--labui-sidebar-accent);
+  --color-sidebar-accent-foreground: var(--labui-sidebar-accent-foreground);
+  --color-sidebar-border: var(--labui-sidebar-border);
+  --color-sidebar-ring: var(--labui-sidebar-ring);
 }
 
 @theme {
   --animate-spin: labui-spin 1s linear infinite;
   --animate-pulse: labui-pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
   --animate-pop: labui-pop 160ms ease-out;
+  --animate-fade-in: labui-fade-in 150ms ease-out;
+  --animate-fade-out: labui-fade-out 150ms ease-in;
+  --animate-zoom-in: labui-zoom-in 150ms ease-out;
+  --animate-zoom-out: labui-zoom-out 150ms ease-in;
+  --animate-slide-in-right: labui-slide-in-right 200ms ease-out;
+  --animate-slide-out-right: labui-slide-out-right 200ms ease-in;
+  --animate-slide-in-left: labui-slide-in-left 200ms ease-out;
+  --animate-slide-out-left: labui-slide-out-left 200ms ease-in;
+  --animate-slide-in-top: labui-slide-in-top 200ms ease-out;
+  --animate-slide-out-top: labui-slide-out-top 200ms ease-in;
+  --animate-slide-in-bottom: labui-slide-in-bottom 200ms ease-out;
+  --animate-slide-out-bottom: labui-slide-out-bottom 200ms ease-in;
+  @keyframes labui-fade-in {
+    from {
+      opacity: 0;
+    }
+  }
+  @keyframes labui-fade-out {
+    to {
+      opacity: 0;
+    }
+  }
+  @keyframes labui-zoom-in {
+    from {
+      opacity: 0;
+      transform: translate(-50%, -50%) scale(0.95);
+    }
+  }
+  @keyframes labui-zoom-out {
+    to {
+      opacity: 0;
+      transform: translate(-50%, -50%) scale(0.95);
+    }
+  }
+  @keyframes labui-slide-in-right {
+    from {
+      transform: translateX(100%);
+    }
+  }
+  @keyframes labui-slide-out-right {
+    to {
+      transform: translateX(100%);
+    }
+  }
+  @keyframes labui-slide-in-left {
+    from {
+      transform: translateX(-100%);
+    }
+  }
+  @keyframes labui-slide-out-left {
+    to {
+      transform: translateX(-100%);
+    }
+  }
+  @keyframes labui-slide-in-top {
+    from {
+      transform: translateY(-100%);
+    }
+  }
+  @keyframes labui-slide-out-top {
+    to {
+      transform: translateY(-100%);
+    }
+  }
+  @keyframes labui-slide-in-bottom {
+    from {
+      transform: translateY(100%);
+    }
+  }
+  @keyframes labui-slide-out-bottom {
+    to {
+      transform: translateY(100%);
+    }
+  }
   @keyframes labui-spin {
     to {
       transform: rotate(360deg);
