@@ -1,6 +1,6 @@
 # Labpane example site
 
-Labpane's homepage, with a live `@labpane/os` workspace, and a palette of every `@labpane/ui` component and colour token. It's a static Vite site that uses the packages from this workspace.
+Labpane's homepage, with a live `@labpane/os` workspace, and a palette of every `@labpane/ui` component and color token. It's a static Vite site that uses the packages from this workspace.
 
 ```sh
 bun install

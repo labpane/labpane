@@ -13,7 +13,7 @@
     "jsx-a11y/label-has-associated-control": [
       "error",
       {
-        "controlComponents": ["Checkbox"]
+        "controlComponents": ["Checkbox", "Switch"]
       }
     ],
     "jsx-a11y/no-noninteractive-tabindex": [

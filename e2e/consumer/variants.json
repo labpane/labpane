@@ -13,6 +13,7 @@
   "latest": {
     "dependencies": {
       "@radix-ui/react-alert-dialog": "latest",
+      "@radix-ui/react-avatar": "latest",
       "@radix-ui/react-checkbox": "latest",
       "@radix-ui/react-context-menu": "latest",
       "@radix-ui/react-dialog": "latest",
@@ -20,6 +21,11 @@
       "@radix-ui/react-popover": "latest",
       "@radix-ui/react-select": "latest",
       "@radix-ui/react-slot": "latest",
+      "@radix-ui/react-switch": "latest",
+      "@radix-ui/react-tabs": "latest",
+      "@radix-ui/react-toggle": "latest",
+      "@radix-ui/react-toggle-group": "latest",
+      "@radix-ui/react-tooltip": "latest",
       "react": "latest",
       "react-dom": "latest"
     },

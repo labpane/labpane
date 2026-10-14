@@ -1,16 +1,15 @@
 import { useId, type ReactNode } from "react";
 import { PlusIcon } from "lucide-react";
+import { Button } from "./button.js";
+import { Field, FieldLabel } from "./field.js";
+import { Input } from "./input.js";
 import {
-  Button,
-  Field,
-  FieldLabel,
-  Input,
   Select,
-  SelectTrigger,
-  SelectValue,
   SelectContent,
   SelectItem,
-} from "./primitives.js";
+  SelectTrigger,
+  SelectValue,
+} from "./select.js";
 
 type TextProps = {
   label: string;

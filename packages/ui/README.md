@@ -1,9 +1,9 @@
 # @labpane/ui
 
-Page layouts, forms, dialogs, menus, tables, and an optional terminal for React, built on Radix. It pairs with [`@labpane/os`](../os) but works on its own.
+Pages, forms, dialogs, menus, tables, navigation, charts, and an optional terminal for React, built on Radix. It pairs with [`@labpane/os`](../os) but works on its own.
 
 ```sh
-npm install @labpane/ui @radix-ui/react-alert-dialog @radix-ui/react-checkbox @radix-ui/react-context-menu @radix-ui/react-dialog @radix-ui/react-dropdown-menu @radix-ui/react-popover @radix-ui/react-select @radix-ui/react-slot
+npm install @labpane/ui @radix-ui/react-alert-dialog @radix-ui/react-avatar @radix-ui/react-checkbox @radix-ui/react-context-menu @radix-ui/react-dialog @radix-ui/react-dropdown-menu @radix-ui/react-popover @radix-ui/react-select @radix-ui/react-slot @radix-ui/react-switch @radix-ui/react-tabs @radix-ui/react-toggle @radix-ui/react-toggle-group @radix-ui/react-tooltip
 ```
 
 ```tsx
@@ -23,15 +23,18 @@ Radix and React are peer dependencies, so your app keeps one copy of each. The s
 
 ## Components
 
-|           |                                                                                                              |
-| --------- | ------------------------------------------------------------------------------------------------------------ |
-| Pages     | `Page`, `PageHeader`, `PageActions`, `Back`                                                                  |
-| Controls  | `Button`, `Badge`, `Input`, `Checkbox`, `Select` and its parts, `Spinner`, `Skeleton`, `CopyButton`, `Alert` |
-| Forms     | `Field`, `FieldLabel`, `FieldError`, `TextField`, `SelectField`, `AddButton`                                 |
-| Dialogs   | `Dialog` and its parts, `ConfirmDialog`, `DiscardDialog`                                                     |
-| Menus     | `OptionMenu`, `ActionMenu`, `MenuContent`                                                                    |
-| Tables    | `Table`, `column`, `mono`, `num`                                                                             |
-| Workspace | `AppMenu`: logo menu with theme, size, and full-screen controls                                              |
+|            |                                                                                                                                                                                                                |
+| ---------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Pages      | `Page`, `PageHeader` and its parts, `PageActions`, `Back`, `Topbar`, `Breadcrumb` and its parts, `TableScreen`, `BrowserLayout` and its parts, `SidePanel`, `SettingsSection`, `SettingsRow`, `SettingsFooter` |
+| Navigation | `Sidebar` and its parts, `Rail`, `RailItem`, `NavTabs`, `NavTab`, `Tabs` and its parts, `Steps`, `Step`, `Command` and its parts                                                                               |
+| Controls   | `Button`, `Badge`, `Input`, `Textarea`, `Checkbox`, `Switch`, `Toggle`, `ToggleGroup`, `Select` and its parts, `NativeSelect`, `SearchInput`, `FileInput`, `InputGroup` and its parts, `CopyButton`, `Kbd`     |
+| Forms      | `Field`, `FieldLabel`, `FieldDescription`, `FieldError`, `FieldSet`, `FieldGroup`, `Label`, `TextField`, `SelectField`, `AddButton`                                                                            |
+| Display    | `Alert`, `Card` and its parts, `Avatar` and its parts, `Stats`, `Stat`, `Empty` and its parts, `Separator`, `Skeleton`, `Spinner`, `Tooltip`, `EmailThread`, `EmailMessage`                                    |
+| Dialogs    | `Dialog` and its parts, `Sheet` and its parts, `ConfirmDialog`, `DiscardDialog`                                                                                                                                |
+| Menus      | `DropdownMenu` and its parts, `OptionMenu`, `ActionMenu`, `MenuContent`                                                                                                                                        |
+| Tables     | `Table`, `TableStack`, `column`, `mono`, `num`                                                                                                                                                                 |
+| Charts     | `TimeSeriesChart`, `HistogramChart`, `HistogramSparkline`, `FlameGraph`, `TimingTracks`, `ChartFrame`                                                                                                          |
+| Workspace  | `AppMenu` with `AppMenuSection`; `useTabActive` and `useTabVisible` read the tab state that `@labpane/os` provides                                                                                             |
 
 `cn()` merges class names and lets your own Tailwind classes override the `labui:` defaults they conflict with.
 
@@ -109,7 +112,19 @@ Set these on `:root`, or on any ancestor. Add a `dark` class to an ancestor for 
 }
 ```
 
-Colours: `background`, `foreground`, `card`, `popover`, `primary`, `secondary`, `muted`, `accent`, `destructive`, `success`, and `warning`, each with a `-foreground` pair where it applies, plus `link`, `border`, `input`, `input-background`, `ring`, `overlay`, and `destructive-muted`. Fonts: `font-sans`, `font-mono`, and `font-display`. Sizes: `radius`, `radius-dialog`, `control-height`, `control-height-sm`, `control-px`, and `row-py`. Each is a `--labui-` variable.
+A theme can also be an object. `themeCss(theme)` returns the CSS for both packages' tokens and `<ThemeStyle theme={theme} />` renders it; keys left out keep the defaults.
+
+```tsx
+<ThemeStyle
+  theme={{
+    light: { primary: "#a3242f" },
+    dark: { primary: "#f0808c" },
+    radius: "0.5rem",
+  }}
+/>
+```
+
+Colors: `background`, `foreground`, `card`, `popover`, `primary`, `secondary`, `muted`, `accent`, `destructive`, `success`, and `warning`, each with a `-foreground` pair where it applies, plus `link`, `border`, `input`, `input-background`, `ring`, `overlay`, and `destructive-muted`. Fonts: `font-sans`, `font-mono`, and `font-display`. Sizes: `radius`, `radius-dialog`, `control-height`, `control-height-sm`, `control-px`, and `row-py`. Each is a `--labui-` variable.
 
 ## License
 

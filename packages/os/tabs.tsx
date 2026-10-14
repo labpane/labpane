@@ -1,5 +1,6 @@
 import {
   useWorkspaceIds,
+  useTabLinks,
   useTabSize,
   fitTabWidth,
   type WorkspaceAction,
@@ -12,6 +13,7 @@ import type { Docking } from "./surface.js";
 import { TabSurface, paneShape, tabShape } from "./frame.js";
 import type { WorkspaceTab } from "./workspace.js";
 import { useDragContent } from "./drag-content.js";
+import { hasOpenOverlay } from "./overlay.js";
 
 const motion = { duration: 160, easing: "cubic-bezier(.2,.8,.2,1)" };
 
@@ -48,6 +50,7 @@ export function WorkspaceTabs({
   menu,
 }: WorkspaceTabsProps) {
   const ids = useWorkspaceIds();
+  const tabLinks = useTabLinks();
   const content = useDragContent();
   const density = useTabSize();
   const [metrics, setMetrics] = React.useState({
@@ -278,17 +281,16 @@ export function WorkspaceTabs({
     onReorder(order);
     announce(`${labels.get(from)}: position ${index + 1} of ${order.length}`);
   };
-  const focusTab = (key: string) =>
-    requestAnimationFrame(() => document.getElementById(ids.tab(key))?.focus());
   const split = (key: string, edge: "left" | "right" | "bottom") => {
     announce(
       docking.split(key, edge)
         ? `${labels.get(key)} split ${edge}`
         : "Open another tab or make this pane larger to split it",
     );
-    focusTab(key);
+    tabLinks.focus(key);
   };
   const keyDown = (event: React.KeyboardEvent, key: string, index: number) => {
+    if (hasOpenOverlay()) return;
     if (event.key === "Escape") return finish(true);
     const edges: Record<string, "left" | "right" | "bottom"> = {
       ArrowLeft: "left",
@@ -310,8 +312,7 @@ export function WorkspaceTabs({
         ArrowRight: (index + 1) % items.length,
       };
       const target = targets[event.key];
-      if (target !== undefined)
-        document.getElementById(ids.tab(items[target]!.key))?.focus();
+      if (target !== undefined) tabLinks.get(items[target]!.key)?.focus();
       else if (event.key === "Delete") onClose(key);
       else if (event.key === " ") onSelect(key);
       else return;
@@ -611,6 +612,7 @@ export function WorkspaceTabs({
                 keyboardFocus={!pointerFocus}
               />
               <a
+                ref={tabLinks.register(key)}
                 id={ids.tab(key)}
                 role="tab"
                 tabIndex={active === key ? 0 : -1}
@@ -669,7 +671,7 @@ export function WorkspaceTabs({
                     target,
                     actions,
                     () => {
-                      focusTab(menuFocus.current ?? key);
+                      tabLinks.focus(menuFocus.current ?? key);
                       menuFocus.current = undefined;
                     },
                     key,

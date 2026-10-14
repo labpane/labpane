@@ -26,6 +26,7 @@ import {
   type Pane,
 } from "./layout.js";
 import type { TabDrag } from "./tabs.js";
+import { hasOpenOverlay } from "./overlay.js";
 
 export const position = (box: Box): CSSProperties => ({
   left: box.x,
@@ -351,6 +352,7 @@ export function WorkspaceSurface({
               }}
               onLostPointerCapture={() => setResizing(false)}
               onKeyDown={(event) => {
+                if (hasOpenOverlay()) return;
                 const step = event.shiftKey ? 0.1 : 0.02;
                 const values: Record<string, number> = {
                   [horizontal ? "ArrowLeft" : "ArrowUp"]: ratio - step,

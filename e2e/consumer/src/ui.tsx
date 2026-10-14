@@ -8,7 +8,12 @@ import {
   MenuContent,
   Page,
   SelectField,
+  Switch,
   Table,
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger,
   TextField,
   column,
 } from "@labpane/ui";
@@ -68,15 +73,35 @@ export function AdminPage() {
         <label className="flex items-center gap-2">
           <Checkbox aria-label="Enabled" /> Enabled
         </label>
-        <Table
-          label="Rooms"
-          rows={rows}
-          rowKey={(row) => row.name}
-          columns={[
-            column("name", "Name", (row: (typeof rows)[number]) => row.name),
-            column("size", "Size", (row: (typeof rows)[number]) => row.size),
-          ]}
-        />
+        <label className="flex items-center gap-2">
+          <Switch aria-label="Notify" /> Notify
+        </label>
+        <Tabs defaultValue="rooms">
+          <TabsList>
+            <TabsTrigger value="rooms">Rooms</TabsTrigger>
+            <TabsTrigger value="log">Log</TabsTrigger>
+          </TabsList>
+          <TabsContent value="log">Nothing logged yet.</TabsContent>
+          <TabsContent value="rooms">
+            <Table
+              label="Rooms"
+              rows={rows}
+              rowKey={(row) => row.name}
+              columns={[
+                column(
+                  "name",
+                  "Name",
+                  (row: (typeof rows)[number]) => row.name,
+                ),
+                column(
+                  "size",
+                  "Size",
+                  (row: (typeof rows)[number]) => row.size,
+                ),
+              ]}
+            />
+          </TabsContent>
+        </Tabs>
       </Page>
     </main>
   );

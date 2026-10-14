@@ -38,7 +38,7 @@ export function readTokens(): Tokens {
   return { light, dark };
 }
 
-const nonColour = /-(font-|radius|control-|row-py)/;
+const nonColor = /-(font-|radius|control-|row-py)/;
 
 function Swatch({ name, tokens }: { name: string; tokens: Tokens }) {
   const prefix = name.startsWith("--labui-") ? "--labui-" : "--lab-";
@@ -79,7 +79,7 @@ function Swatch({ name, tokens }: { name: string; tokens: Tokens }) {
   );
 }
 
-export function ColourTokens({
+export function ColorTokens({
   prefix,
   label,
 }: {
@@ -88,12 +88,12 @@ export function ColourTokens({
 }) {
   const [tokens] = useState(readTokens);
   const names = [...tokens.light.keys()].filter(
-    (name) => name.startsWith(prefix) && !nonColour.test(name),
+    (name) => name.startsWith(prefix) && !nonColor.test(name),
   );
   if (!names.length)
     return <p className="note">The {label} stylesheet isn’t loaded.</p>;
   return (
-    <ul className="swatches" aria-label={`${label} colour tokens`}>
+    <ul className="swatches" aria-label={`${label} color tokens`}>
       {names.map((name) => (
         <Swatch key={name} name={name} tokens={tokens} />
       ))}
@@ -103,7 +103,7 @@ export function ColourTokens({
 
 export function OtherTokens() {
   const [tokens] = useState(readTokens);
-  const names = [...tokens.light.keys()].filter((name) => nonColour.test(name));
+  const names = [...tokens.light.keys()].filter((name) => nonColor.test(name));
   return (
     <div className="token-table">
       <table>

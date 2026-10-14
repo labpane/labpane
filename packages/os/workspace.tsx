@@ -2,6 +2,7 @@ import {
   useEffect,
   useId,
   useLayoutEffect,
+  useMemo,
   useRef,
   useState,
   type ReactNode,
@@ -20,12 +21,23 @@ import {
 import {
   WorkspaceId,
   WorkspaceDensity,
+  TabLinks,
+  useTabLinks,
   useWorkspaceIds,
   useTabSize,
   type Density,
   type WorkspaceMenu,
 } from "./context.js";
 import { UnsavedChanges } from "./unsaved-changes.js";
+import { TabStateContext } from "./tab-state.js";
+import { LeaveTab, useOpeners } from "./leave-tab.js";
+import {
+  TabHistoryContext,
+  useTabHistories,
+  type TabHistoryStore,
+} from "./tab-history.js";
+import { useBrowserHistory } from "./browser-history.js";
+import { hasOpenOverlay } from "./overlay.js";
 
 export type WorkspaceTab = {
   key: string;
@@ -54,6 +66,9 @@ export type WorkspaceProps<T extends WorkspaceTab> = {
   confirmClose?: (tab: T) => boolean | Promise<boolean>;
   layout: Layout;
   onLayoutChange: (layout: Layout) => void;
+  // history puts the front tab's own history, which starts at its href, behind the browser's Back
+  // and Forward
+  history?: boolean;
   className?: string;
   children: (tab: T, pane: WorkspacePane) => ReactNode;
   empty: (pane: WorkspacePane) => ReactNode;
@@ -67,11 +82,14 @@ export type WorkspacePane = {
 
 export function Workspace<T extends WorkspaceTab>(props: WorkspaceProps<T>) {
   const id = useId();
+  const [links] = useState(() => new Map<string, HTMLElement>());
   return (
     <WorkspaceId.Provider value={id}>
-      <WorkspaceDensity.Provider value={props.density ?? 100}>
-        <WorkspaceContent {...props} />
-      </WorkspaceDensity.Provider>
+      <TabLinks.Provider value={links}>
+        <WorkspaceDensity.Provider value={props.density ?? 100}>
+          <WorkspaceContent {...props} />
+        </WorkspaceDensity.Provider>
+      </TabLinks.Provider>
     </WorkspaceId.Provider>
   );
 }
@@ -91,11 +109,12 @@ function WorkspaceContent<T extends WorkspaceTab>({
   confirmClose,
   layout,
   onLayoutChange: change,
+  history,
   className,
   children,
   empty,
 }: WorkspaceProps<T>) {
-  const ids = useWorkspaceIds();
+  const links = useTabLinks();
   const { height, contentHeight, logoSize } = useTabSize();
   const corner = useRef<HTMLDivElement>(null);
   const [reserve, setReserve] = useState(0);
@@ -128,6 +147,11 @@ function WorkspaceContent<T extends WorkspaceTab>({
     if (visibleLayout !== layout) change(visibleLayout);
     // oxlint-disable-next-line react-hooks/exhaustive-deps -- onLayoutChange may be inline
   }, [visibleLayout, layout]);
+  const front = active ?? panes(visibleLayout)[0]?.active;
+  const openers = useOpeners(tabs, front);
+  const historyOf = useTabHistories(tabs);
+  const frontTab = tabs.find((tab) => tab.key === front);
+  useBrowserHistory(history && frontTab ? historyOf(frontTab) : undefined);
   const dirty = useRef(new Map<symbol, string>());
   useEffect(() => {
     const warn = (event: BeforeUnloadEvent) => {
@@ -136,20 +160,21 @@ function WorkspaceContent<T extends WorkspaceTab>({
     addEventListener("beforeunload", warn);
     return () => removeEventListener("beforeunload", warn);
   }, []);
-  function close(key: string) {
+  function close(key: string, next?: string) {
     const pane = panes(visibleLayout).find((p) => p.tabs.includes(key));
     if (!pane) return;
     const remaining = pane.tabs.filter((k) => k !== key);
     const opener = tabs.find((tab) => tab.key === key)?.opener;
     const neighbor =
+      next ??
       remaining.find((key) => key === opener) ??
       remaining[Math.min(pane.tabs.indexOf(key), remaining.length - 1)] ??
       tabs.find((t) => t.key !== key)?.key;
     onClose(key, neighbor);
     requestAnimationFrame(() =>
       (
-        document.getElementById(
-          ids.tab(key === pane.active ? (neighbor ?? "") : (pane.active ?? "")),
+        links.get(
+          key === pane.active ? (neighbor ?? "") : (pane.active ?? ""),
         ) ??
         root.current?.querySelector<HTMLElement>(
           ".lab-toolbar-end button, [data-pane-sheet]",
@@ -157,13 +182,32 @@ function WorkspaceContent<T extends WorkspaceTab>({
       )?.focus({ preventScroll: true }),
     );
   }
-  const focus = (key: string) =>
-    requestAnimationFrame(() => document.getElementById(ids.tab(key))?.focus());
+  function requestClose(key: string, next?: string) {
+    if (![...dirty.current.values()].includes(key)) return close(key, next);
+    const tab = tabs.find((tab) => tab.key === key)!;
+    const element = links.get(key);
+    Promise.resolve(
+      confirmClose
+        ? confirmClose(tab)
+        : confirm(`Discard changes in ${tab.label}?`),
+    ).then((discard) => {
+      if (discard) close(key, next);
+      else requestAnimationFrame(() => element?.focus());
+    });
+  }
+  function leave(key: string) {
+    const opener =
+      openers.get(key) ?? tabs.find((tab) => tab.key === key)?.opener;
+    requestClose(
+      key,
+      tabs.some((tab) => tab.key === opener) ? opener : undefined,
+    );
+  }
   const paneOf = (pane: Pane): WorkspacePane => ({
     id: pane.id,
     tabs: pane.tabs,
     active: pane.active,
-    focus,
+    focus: links.focus,
   });
   return (
     <>
@@ -184,7 +228,7 @@ function WorkspaceContent<T extends WorkspaceTab>({
         }
         className={className ? `lab-workspace ${className}` : "lab-workspace"}
         onKeyDown={(event) => {
-          if (event.key !== "F6") return;
+          if (event.key !== "F6" || hasOpenOverlay()) return;
           event.preventDefault();
           const selected = Array.from(
             event.currentTarget.querySelectorAll<HTMLElement>(
@@ -248,20 +292,7 @@ function WorkspaceContent<T extends WorkspaceTab>({
                     }
                   : undefined
               }
-              onClose={(key) => {
-                if (![...dirty.current.values()].includes(key))
-                  return close(key);
-                const tab = tabs.find((tab) => tab.key === key)!;
-                const element = document.getElementById(ids.tab(key));
-                Promise.resolve(
-                  confirmClose
-                    ? confirmClose(tab)
-                    : confirm(`Discard changes in ${tab.label}?`),
-                ).then((discard) => {
-                  if (discard) close(key);
-                  else requestAnimationFrame(() => element?.focus());
-                });
-              }}
+              onClose={requestClose}
               onReorder={(keys) =>
                 change(
                   updateLayout(visibleLayout, pane.id, (node) => ({
@@ -278,13 +309,13 @@ function WorkspaceContent<T extends WorkspaceTab>({
                 const region = regions.find((r) =>
                   r.pane.tabs.includes(tab.key),
                 )!;
+                const hidden =
+                  tab.key !== region.pane.active && tab.key !== lifted;
                 return (
                   <TabPanel
                     key={tab.key}
                     tab={tab}
-                    hidden={
-                      tab.key !== region.pane.active && tab.key !== lifted
-                    }
+                    hidden={hidden}
                     pane={region.pane.id}
                     box={region.box}
                     transition={transition}
@@ -293,15 +324,22 @@ function WorkspaceContent<T extends WorkspaceTab>({
                       if (active !== tab.key) onSelect(tab.key);
                     }}
                   >
-                    <UnsavedChanges.Provider
-                      value={(source, changed) =>
-                        changed
-                          ? dirty.current.set(source, tab.key)
-                          : dirty.current.delete(source)
-                      }
+                    <TabScope
+                      active={tab.key === front}
+                      visible={!hidden}
+                      leave={() => leave(tab.key)}
+                      history={historyOf(tab)}
                     >
-                      {children(tab, paneOf(region.pane))}
-                    </UnsavedChanges.Provider>
+                      <UnsavedChanges.Provider
+                        value={(source, changed) =>
+                          changed
+                            ? dirty.current.set(source, tab.key)
+                            : dirty.current.delete(source)
+                        }
+                      >
+                        {children(tab, paneOf(region.pane))}
+                      </UnsavedChanges.Provider>
+                    </TabScope>
                   </TabPanel>
                 );
               })}
@@ -320,6 +358,32 @@ function WorkspaceContent<T extends WorkspaceTab>({
         />
       </div>
     </>
+  );
+}
+
+// TabScope tells a tab's content where it stands
+function TabScope({
+  active,
+  visible,
+  leave,
+  history,
+  children,
+}: {
+  active: boolean;
+  visible: boolean;
+  leave: () => void;
+  history: TabHistoryStore;
+  children: ReactNode;
+}) {
+  const state = useMemo(() => ({ active, visible }), [active, visible]);
+  return (
+    <TabStateContext.Provider value={state}>
+      <LeaveTab.Provider value={leave}>
+        <TabHistoryContext.Provider value={history}>
+          {children}
+        </TabHistoryContext.Provider>
+      </LeaveTab.Provider>
+    </TabStateContext.Provider>
   );
 }
 

@@ -2,7 +2,7 @@ import * as Popover from "@radix-ui/react-popover";
 import { useRef, useState, type ReactNode } from "react";
 import { MaximizeIcon, MinimizeIcon, MoonIcon, SunIcon } from "lucide-react";
 import { ActionMenu } from "./menu.js";
-import { Button } from "./primitives.js";
+import { Button } from "./button.js";
 
 const round = "labui:rounded-full labui:border labui:border-border";
 
@@ -18,6 +18,7 @@ export function AppMenu({
   onSizeReset,
   fullscreen = false,
   onFullscreenChange,
+  children,
 }: {
   name: string;
   logo: ReactNode;
@@ -31,6 +32,8 @@ export function AppMenu({
   fullscreen?: boolean;
   onFullscreenChange?: (fullscreen: boolean) => void;
   align?: "start" | "end";
+  // children hold the app's own items, grouped with AppMenuSection
+  children?: ReactNode;
 }) {
   const trigger = useRef<HTMLButtonElement>(null);
   const sizePanel = useRef<HTMLDivElement>(null);
@@ -214,8 +217,31 @@ export function AppMenu({
               </Button>
             )}
           </div>
+          {children}
         </Popover.Content>
       </Popover.Portal>
     </Popover.Root>
+  );
+}
+
+export function AppMenuSection({
+  title,
+  children,
+}: {
+  title?: string;
+  children: ReactNode;
+}) {
+  return (
+    <div
+      data-slot="app-menu-section"
+      className="labui:flex labui:w-full labui:flex-col labui:gap-1 labui:border-t labui:pt-3 labui:text-left labui:text-sm"
+    >
+      {title && (
+        <p className="labui:px-1 labui:text-xs labui:font-medium labui:text-muted-foreground">
+          {title}
+        </p>
+      )}
+      {children}
+    </div>
   );
 }

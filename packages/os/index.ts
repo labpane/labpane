@@ -14,6 +14,16 @@ export {
 } from "./context.js";
 export { useUnsavedChanges } from "./unsaved-changes.js";
 export {
+  useTabActive,
+  useTabVisible,
+  useTabVisibleRef,
+  useShownOnce,
+  type TabState,
+} from "./tab-state.js";
+export { useLeaveTab } from "./leave-tab.js";
+export { useTabHistory, type TabHistory } from "./tab-history.js";
+export { hasOpenOverlay } from "./overlay.js";
+export {
   restoreLayout,
   reconcileLayout,
   dockTab,
