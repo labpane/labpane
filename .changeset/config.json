@@ -3,7 +3,7 @@
   "baseBranch": "main",
   "access": "public",
   "ignore": [],
-  "fixed": [],
+  "fixed": [["@labpane/os", "@labpane/ui"]],
   "linked": [],
   "format": "auto",
   "updateInternalDependencies": "patch",

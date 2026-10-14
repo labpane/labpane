@@ -64,7 +64,9 @@ If your change affects a published package, add a changeset that describes it fo
 bun run changeset
 ```
 
-Pick the packages and the bump (patch for fixes, minor for features, major for breaking changes), and commit the generated file with your change.
+Pick the packages and the bump: patch for fixes, minor for features, and major for anything the README's [versioning](README.md#versioning) section counts as breaking. Both packages are always released together under one version. Commit the generated file with your change.
+
+CI checks that every pull request touching a published package has one. If a change doesn't need a release, such as a fix to a test, run `bun run changeset --empty` instead.
 
 ## Releasing
 
