@@ -23,7 +23,9 @@ export {
   type Split,
 } from "./layout.js";
 export {
+  TrafficLights,
   WindowControls,
+  desktopSlots,
   useFullscreen,
   useWindowFrame,
   type WindowEdge,

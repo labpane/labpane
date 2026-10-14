@@ -67,11 +67,13 @@ export function Demo({
   header,
   leading,
   trailing,
+  titleBar,
   slots,
 }: {
   header?: ReactNode;
   leading?: ReactNode;
   trailing?: ReactNode;
+  titleBar?: boolean;
   slots?: (open: (kind: string) => string) => Slots;
 }) {
   const [tabs, setTabs] = useState<Tab[]>(initial);
@@ -136,6 +138,7 @@ export function Demo({
               }
               leading={leading}
               trailing={trailing}
+              titleBar={titleBar}
               empty={() => <p>No tabs open</p>}
               {...slots?.(open)}
             >

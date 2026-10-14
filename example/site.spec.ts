@@ -94,6 +94,39 @@ test("the home page runs a live workspace", async ({ page }, info) => {
   await expect(tab(page, "Settings")).toHaveCount(0);
 });
 
+test.describe("in a desktop window", () => {
+  // A screen bigger than the window, so the page isn't in full screen
+  test.use({ screen: { width: 1920, height: 1080 } });
+
+  test("the desktop page puts the window controls where each platform expects", async ({
+    page,
+  }, info) => {
+    test.skip(info.project.name !== "desktop", "desktop windows are wide");
+    await page.addInitScript(() => {
+      const sent: string[] = [];
+      Object.assign(window, {
+        sent,
+        chrome: {
+          webview: { postMessage: (message: string) => sent.push(message) },
+        },
+      });
+    });
+    const report = () =>
+      page.evaluate(
+        () =>
+          (window as unknown as { sent: string[] }).sent.find((message) =>
+            message.startsWith('EE{"name":"layout"'),
+          ) ?? "",
+      );
+    for (const platform of ["windows", "linux", "macos"]) {
+      await page.goto(`desktop/?platform=${platform}`);
+      await expect
+        .poll(report)
+        .toContain(`"platform":"${platform}","problems":[]`);
+    }
+  });
+});
+
 test("the palette shows every section and its overlays work", async ({
   page,
 }) => {

@@ -12,6 +12,7 @@ export default defineConfig({
       input: {
         home: page("index.html"),
         palette: page("palette/index.html"),
+        desktop: page("desktop/index.html"),
       },
     },
   },

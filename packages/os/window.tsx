@@ -17,6 +17,8 @@ export type WindowHost = {
   drag?: () => void;
   resize?: (edge: WindowEdge) => void;
   fullscreen?: (on: boolean) => void;
+  // trafficLights centres macOS's window buttons this many pixels below the top of the window
+  trafficLights?: (center: number) => void;
 };
 
 const client = typeof window !== "undefined";
@@ -135,6 +137,49 @@ const glyph = (children: ReactNode) => (
     {children}
   </svg>
 );
+
+// TrafficLights keeps room for macOS's window buttons at the start of the toolbar. When the host can
+// move them, it centres them in the title bar, from the top of the window to the top pane, and the
+// tabs start as far after the buttons as the buttons are from the window's edge
+export function TrafficLights({ host }: { host: WindowHost }) {
+  const [full] = useFullscreen(host);
+  const spacer = useRef<HTMLDivElement>(null);
+  const shown = host.platform === "macos" && !full;
+  useLayoutEffect(() => {
+    const element = spacer.current;
+    const toolbar = element?.closest<HTMLElement>(".lab-toolbar");
+    if (!element || !toolbar || !host.trafficLights) return;
+    const place = () => {
+      const center = toolbar.getBoundingClientRect().bottom / 2;
+      host.trafficLights!(center);
+      // macOS lays out three 14px buttons on a 23px pitch, inset from the left edge by as much as the
+      // centre is from the top, so they span from center - 7 to center + 53
+      const end = center * 2 + 46;
+      const gap = parseFloat(getComputedStyle(toolbar).columnGap) || 0;
+      element.style.width = `${end - element.getBoundingClientRect().left - gap}px`;
+    };
+    place();
+    const observer = new ResizeObserver(place);
+    observer.observe(toolbar);
+    return () => observer.disconnect();
+  }, [host, shown]);
+  return shown ? <div ref={spacer} className="lab-traffic-lights" /> : null;
+}
+
+// desktopSlots places an app menu next to the window's own controls, as the workspace's leading
+// and trailing slots: macOS keeps its traffic lights at the start, so the menu goes at the end;
+// elsewhere the menu starts the toolbar and the window buttons end it. Without a host the menu leads
+export function desktopSlots(
+  host: WindowHost | undefined,
+  menu: ReactNode | ((align: "start" | "end") => ReactNode),
+) {
+  const place = (align: "start" | "end") =>
+    typeof menu === "function" ? menu(align) : menu;
+  if (!host) return { leading: place("start"), trailing: undefined };
+  if (host.platform === "macos")
+    return { leading: <TrafficLights host={host} />, trailing: place("end") };
+  return { leading: place("start"), trailing: <WindowControls host={host} /> };
+}
 
 // WindowControls are caption buttons for the workspace's trailing slot, flush in the window's corner
 export function WindowControls({ host }: { host: WindowHost }) {

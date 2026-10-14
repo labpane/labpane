@@ -9,8 +9,11 @@ import {
 } from "lucide-react";
 import {
   Workspace,
+  desktopSlots,
   useFullscreen,
+  useWindowFrame,
   type Layout,
+  type WindowHost,
   type WorkspaceTab,
 } from "@labpane/os";
 import {
@@ -62,9 +65,11 @@ function start(wide: boolean) {
 
 const wide = () => matchMedia("(min-width: 48rem)").matches;
 
-export function Demo() {
+// Demo runs in the home page's frame, or fills a desktop window when given its host
+export function Demo({ host }: { host?: WindowHost }) {
   const dark = useDark();
-  const [fullscreen, setFullscreen] = useFullscreen();
+  const [fullscreen, setFullscreen] = useFullscreen(host);
+  useWindowFrame(host);
   const [initial] = useState(() => start(wide()));
   const [tabs, setTabs] = useState<DemoTab[]>(initial.tabs);
   const [active, setActive] = useState<string | undefined>("welcome");
@@ -155,7 +160,8 @@ export function Demo() {
         }}
         layout={layout}
         onLayoutChange={setLayout}
-        leading={
+        titleBar={!!host}
+        {...desktopSlots(host, (align) => (
           <AppMenu
             name="Labpane"
             logo={<Logo />}
@@ -166,8 +172,9 @@ export function Demo() {
             onSizeReset={() => setDensity(100)}
             fullscreen={fullscreen}
             onFullscreenChange={setFullscreen}
+            align={align}
           />
-        }
+        ))}
         toolbar={(pane) => (
           <OptionMenu
             options={order.map((kind) => ({
