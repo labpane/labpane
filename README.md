@@ -16,6 +16,19 @@ Both packages:
 
 Use `@labpane/os` on its own and bring your own components, or add `@labpane/ui` for a ready-made look.
 
+## Versioning
+
+`@labpane/os` and `@labpane/ui` follow [semantic versioning](https://semver.org) and are released together under one version number, so you can keep both on the same version.
+
+A new major version is needed for any change that can break an app upgrading within its version range:
+
+- removing or renaming an export, prop, or option, or changing what one does
+- renaming a `lab-` or `labui:` class, or a `--lab-*` or `--labui-*` token, that apps style against
+- changing an accessible name or role that apps or their tests look up
+- dropping support for a React version, or for apps with Tailwind 3, Tailwind 4, or no Tailwind
+
+Visual changes that break none of these, such as spacing or alignment, ship in minor releases and are called out in the changelog.
+
 ## Contributing
 
 See [CONTRIBUTING.md](CONTRIBUTING.md) for setup, tests, and releases. Report security issues privately as described in [SECURITY.md](SECURITY.md).
