@@ -1,5 +1,13 @@
 # @labpane/ui
 
+## 1.3.0
+
+### Minor Changes
+
+- 8faae84: - Batch drag and resize updates and measure pane geometry before applying changes.
+  - Prioritize selected tabs and reuse unchanged pane content during movement.
+  - Reuse table cells, number formatters, and chart labels while keeping state and geometry current.
+
 ## 1.2.0
 
 ### Minor Changes
