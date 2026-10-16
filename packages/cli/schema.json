@@ -1,0 +1,29 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Labpane project setup",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["version", "name", "directory", "template", "targets"],
+  "properties": {
+    "$schema": { "type": "string" },
+    "version": { "const": 1 },
+    "name": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9-]{0,63}$",
+      "not": { "pattern": "^(con|prn|aux|nul|com[0-9]|lpt[0-9])$" }
+    },
+    "directory": {
+      "type": "string",
+      "minLength": 1,
+      "pattern": "^[^\\u0000-\\u001f]*\\S[^\\u0000-\\u001f]*$",
+      "description": "Resolved relative to this config file, not the current working directory."
+    },
+    "template": { "const": "react-ts" },
+    "targets": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": { "enum": ["web", "desktop", "pwa"] }
+    }
+  }
+}

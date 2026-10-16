@@ -48,6 +48,20 @@ it("keeps headers stable through geometry changes and uses current docking callb
     />,
   );
   expect(renders).toBe(2);
+  view.rerender(
+    <WorkspaceSurface
+      layout={{ ...layout, ratio: 0.7 }}
+      change={(next) => changes.push(next)}
+      header={header}
+      content={content}
+      titlebarArea={{ left: 80, right: 700, height: 32, insetRight: 100 }}
+    />,
+  );
+  expect(renders).toBe(2);
+  expect(
+    screen.getByText("Move left").closest<HTMLElement>("[data-pane-header]")!
+      .style.left,
+  ).toBe("80px");
   fireEvent.click(screen.getByText("Move left"));
   expect(changes).toHaveLength(1);
   expect(changes[0]).toMatchObject({

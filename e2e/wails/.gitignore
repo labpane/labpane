@@ -1,0 +1,4 @@
+build/
+src/wailsjs/
+package.json.md5
+*.log

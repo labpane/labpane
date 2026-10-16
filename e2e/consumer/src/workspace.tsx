@@ -15,6 +15,7 @@ import {
   type WorkspacePane,
   type WorkspaceTab,
 } from "@labpane/os";
+import type { WindowControlsOverlay } from "@labpane/os/pwa";
 
 declare global {
   interface Window {
@@ -69,12 +70,14 @@ export function Demo({
   trailing,
   titleBar,
   slots,
+  windowControlsOverlay,
 }: {
   header?: ReactNode;
   leading?: ReactNode;
   trailing?: ReactNode;
   titleBar?: boolean;
   slots?: (open: (kind: string) => string) => Slots;
+  windowControlsOverlay?: WindowControlsOverlay;
 }) {
   const [tabs, setTabs] = useState<Tab[]>(initial);
   const [active, setActive] = useState<string | undefined>(initial[0]?.key);
@@ -108,12 +111,14 @@ export function Demo({
   };
   return (
     <div className="flex h-screen flex-col">
-      <header className="flex items-center gap-2 border-b px-4 py-1 text-sm">
-        <span data-pending={pending} data-ticks={ticks}>
-          {pending ? "Loading" : "Idle"}
-        </span>
-        {header}
-      </header>
+      {windowControlsOverlay === undefined && (
+        <header className="flex items-center gap-2 border-b px-4 py-1 text-sm">
+          <span data-pending={pending} data-ticks={ticks}>
+            {pending ? "Loading" : "Idle"}
+          </span>
+          {header}
+        </header>
+      )}
       <Suspense fallback={<p>Loading workspace</p>}>
         <Profiler
           id="workspace"
@@ -123,6 +128,12 @@ export function Demo({
         >
           <div className="min-h-0 flex-1">
             <Workspace
+              windowControlsOverlay={windowControlsOverlay}
+              density={
+                params.has("density")
+                  ? Number(params.get("density"))
+                  : undefined
+              }
               tabs={tabs}
               active={active}
               layout={layout}

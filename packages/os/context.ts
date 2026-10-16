@@ -56,11 +56,16 @@ export function densitySize(density: Density) {
   ) as typeof from;
 }
 export const WorkspaceDensity = createContext<Density>(100);
+export const MinimumTabHeight = createContext(0);
 export const fitTabWidth = (width: number, available: number, count: number) =>
   Math.min(width, Math.max(128, (available - 16) / Math.max(1, count)));
 export function useTabSize() {
   const density = useContext(WorkspaceDensity);
-  return useMemo(() => densitySize(density), [density]);
+  const minimumHeight = useContext(MinimumTabHeight);
+  return useMemo(() => {
+    const size = densitySize(density);
+    return { ...size, height: Math.max(size.height, minimumHeight) };
+  }, [density, minimumHeight]);
 }
 export function useWorkspaceIds() {
   const prefix = useContext(WorkspaceId);

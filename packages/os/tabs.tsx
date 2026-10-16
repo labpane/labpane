@@ -109,6 +109,8 @@ export function WorkspaceTabs({
     if (element) element.inert = true;
   }, []);
   const frameRef = React.useRef<SVGSVGElement>(null);
+  // The outline belongs to the whole pane, not the toolbar's clipped contents.
+  const frameLayer = dragBoundary?.closest(".lab-board");
   const maskedSheet = React.useRef<HTMLElement | null>(null);
   const maskedOutline = React.useRef<SVGPathElement | null>(null);
   const restoreFrame = () => {
@@ -850,19 +852,22 @@ export function WorkspaceTabs({
         {menu &&
           " Right-click or press Shift plus F10 for tab actions without dragging."}
       </span>
-      {active && (
-        <svg
-          ref={frameRef}
-          aria-hidden="true"
-          data-pane-frame
-          viewBox={`0 0 ${width} ${height}`}
-          strokeWidth={size.borderWidth}
-          style={{ width, height }}
-          className="lab-pane-frame"
-        >
-          <path className="lab-outline" />
-        </svg>
-      )}
+      {active &&
+        frameLayer &&
+        createPortal(
+          <svg
+            ref={frameRef}
+            aria-hidden="true"
+            data-pane-frame
+            viewBox={`0 0 ${width} ${height}`}
+            strokeWidth={size.borderWidth}
+            style={{ width, height }}
+            className="lab-pane-frame"
+          >
+            <path className="lab-outline" />
+          </svg>,
+          frameLayer,
+        )}
       {dragging &&
         createPortal(
           <div

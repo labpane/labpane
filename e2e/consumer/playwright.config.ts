@@ -15,6 +15,8 @@ export default defineConfig({
   workers: 2,
   timeout: 30_000,
   expect: { timeout: 10_000 },
+  // These border crops are identical across builds and device scales.
+  snapshotPathTemplate: "{testDir}/{testFilePath}-snapshots/{arg}{ext}",
   reporter: [["list"]],
   use: {
     browserName: "chromium",
@@ -22,8 +24,21 @@ export default defineConfig({
     trace: "retain-on-failure",
   },
   projects: [
-    { name: "dev", use: { baseURL: "http://127.0.0.1:5310/" } },
-    { name: "build", use: { baseURL: "http://127.0.0.1:5311/" } },
+    {
+      name: "dev",
+      testIgnore: "pwa-native.spec.ts",
+      use: { baseURL: "http://127.0.0.1:5310/" },
+    },
+    {
+      name: "build",
+      testIgnore: "pwa-native.spec.ts",
+      use: { baseURL: "http://127.0.0.1:5311/" },
+    },
+    {
+      name: "pwa-native",
+      testMatch: "pwa-native.spec.ts",
+      use: { baseURL: "http://127.0.0.1:5311/" },
+    },
   ],
   webServer: [server(5310, ""), server(5311, "preview")],
 });

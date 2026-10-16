@@ -71,6 +71,53 @@
   z-index: 30;
 }
 
+/* Only an active PWA overlay owns these drag regions. Wails/Tauri adapters
+   keep their own window integration. The browser draws the caption buttons. */
+.lab-pane-header[data-titlebar-overlay] {
+  overflow: clip;
+}
+
+.lab-pane-header[data-titlebar-overlay] .lab-toolbar {
+  -webkit-app-region: drag;
+  app-region: drag;
+}
+
+.lab-pane-header[data-titlebar-overlay]
+  .lab-toolbar
+  > :not(.lab-toolbar-trailing),
+.lab-workspace[data-window-controls-overlay] .lab-trailing,
+.lab-pane-header[data-titlebar-overlay]
+  :is(
+    button,
+    a,
+    input,
+    textarea,
+    select,
+    [role],
+    [tabindex],
+    [contenteditable],
+    [data-window-no-drag]
+  ) {
+  -webkit-app-region: no-drag;
+  app-region: no-drag;
+}
+
+.lab-pane-header[data-titlebar-overlay]
+  [data-window-drag]:not(
+    button,
+    a,
+    input,
+    textarea,
+    select,
+    [role],
+    [tabindex],
+    [contenteditable],
+    [data-window-no-drag]
+  ) {
+  -webkit-app-region: drag;
+  app-region: drag;
+}
+
 .lab-panel {
   min-height: 0;
   min-width: 0;
