@@ -51,6 +51,12 @@ fi
 pid=$!
 
 stop() {
+  # Capture failures too, before closing the app. Never capture a developer's screen.
+  [ -n "${CI:-}" ] && case $os in
+    linux) command -v import > /dev/null && import -window root "$out/window.png" || true ;;
+    macos) screencapture -x "$out/window.png" || true ;;
+    windows) powershell -NoProfile -Command "Add-Type -AssemblyName System.Windows.Forms, System.Drawing; \$b = [System.Windows.Forms.Screen]::PrimaryScreen.Bounds; \$i = New-Object System.Drawing.Bitmap \$b.Width, \$b.Height; [System.Drawing.Graphics]::FromImage(\$i).CopyFromScreen(\$b.Location, [System.Drawing.Point]::Empty, \$b.Size); \$i.Save('$out\\window.png')" || true ;;
+  esac
   if [ "$os" = windows ]; then
     taskkill //F //T //PID "$(cat "/proc/$pid/winpid")" > /dev/null 2>&1 || true
   fi
@@ -106,12 +112,5 @@ fi
 
 sleep 5
 kill -0 "$pid" 2> /dev/null || fail "the app exited after its window loaded"
-
-# Screenshots only on CI, so a local run never captures a developer's screen
-[ -n "${CI:-}" ] && case $os in
-  linux) command -v import > /dev/null && import -window root "$out/window.png" || true ;;
-  macos) screencapture -x "$out/window.png" || true ;;
-  windows) powershell -NoProfile -Command "Add-Type -AssemblyName System.Windows.Forms, System.Drawing; \$b = [System.Windows.Forms.Screen]::PrimaryScreen.Bounds; \$i = New-Object System.Drawing.Bitmap \$b.Width, \$b.Height; [System.Drawing.Graphics]::FromImage(\$i).CopyFromScreen(\$b.Location, [System.Drawing.Point]::Empty, \$b.Size); \$i.Save('$out\\window.png')" || true ;;
-esac
 
 echo "desktop smoke test passed on $os with the $frame title bar"

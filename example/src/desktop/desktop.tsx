@@ -27,7 +27,10 @@ function layoutProblems() {
     if (buttons) problems.push("window buttons are shown on macOS");
     if (!lights?.width)
       problems.push("there is no room for the traffic lights");
-    if (menu.left < last.right) problems.push("the menu is not after the tabs");
+    if (menu.left < last.right)
+      problems.push(
+        `the menu is not after the tabs: menu left ${menu.left}, last tab right ${last.right}, viewport ${innerWidth}x${innerHeight}`,
+      );
   } else {
     if (!buttons) problems.push("there are no window buttons");
     else if (Math.abs(buttons.right - innerWidth) > 1 || buttons.top !== 0)
@@ -46,11 +49,36 @@ function layoutProblems() {
 export function DesktopPage() {
   useEffect(() => {
     let frame = 0;
-    const timer = setTimeout(() => {
-      frame = requestAnimationFrame(() =>
-        emit("layout", { platform, problems: layoutProblems() }),
-      );
-    }, 500);
+    let readyFrames = 0;
+    const report = (problems: string[]) => {
+      clearTimeout(timer);
+      cancelAnimationFrame(frame);
+      emit("layout", {
+        platform,
+        problems,
+        ...(problems.length && {
+          geometry: Array.from(
+            document.querySelectorAll(
+              ".lab-toolbar, .lab-toolbar > *, [role=tab], .lab-trailing",
+            ),
+            (element) => ({
+              className: element.className,
+              ...element.getBoundingClientRect().toJSON(),
+            }),
+          ),
+        }),
+      });
+    };
+    // WebKit can present its first frame after the old fixed delay has elapsed.
+    // Let ResizeObserver and React fit the tabs before reporting their geometry.
+    const check = () => {
+      const problems = layoutProblems();
+      readyFrames = problems.length ? 0 : readyFrames + 1;
+      if (readyFrames >= 2) report(problems);
+      else frame = requestAnimationFrame(check);
+    };
+    const timer = setTimeout(() => report(layoutProblems()), 5_000);
+    frame = requestAnimationFrame(check);
     return () => {
       clearTimeout(timer);
       cancelAnimationFrame(frame);
