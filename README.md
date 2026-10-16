@@ -16,6 +16,8 @@ Both packages:
 
 Use `@labpane/os` on its own and bring your own components, or add `@labpane/ui` for a ready-made look.
 
+You can also use `@labpane/ui` alone. The CLI, desktop adapters, and PWA integration are optional; neither React package needs Go or Wails. PWA titlebar integration uses an explicit `@labpane/os/pwa` import.
+
 ## Versioning
 
 `@labpane/os` and `@labpane/ui` follow [semantic versioning](https://semver.org) and are released together under one version number, so you can keep both on the same version.
@@ -30,6 +32,8 @@ A new major version is needed for any change that can break an app upgrading wit
 Visual changes that break none of these, such as spacing or alignment, ship in minor releases and are called out in the changelog.
 
 ## Contributing
+
+A local CLI prototype lives in [`packages/cli`](packages/cli). It generates React apps from a saved JSON config and adds optional Wails desktop and PWA builds. Run `node packages/cli/bin/labpane.mjs --help` to try it; the CLI is private and has not been published.
 
 See [CONTRIBUTING.md](CONTRIBUTING.md) for setup, tests, and releases. Report security issues privately as described in [SECURITY.md](SECURITY.md).
 

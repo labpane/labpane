@@ -1,0 +1,27 @@
+/* Wails-only drag regions. Loaded by the desktop entry, never by @labpane/os. */
+html[data-window-frame="custom"] :is(.lab-toolbar, [data-window-drag]) {
+  --wails-draggable: drag;
+  user-select: none;
+}
+
+/* CSS custom properties inherit: every interactive subtree opts out. */
+html[data-window-frame="custom"]
+  :is(
+    a,
+    button,
+    input,
+    select,
+    textarea,
+    label,
+    summary,
+    [contenteditable],
+    [role="button"],
+    [role="tab"],
+    [role="separator"],
+    [role="menuitem"],
+    [role="combobox"],
+    .lab-tab,
+    .lab-window-controls
+  ) {
+  --wails-draggable: no-drag;
+}

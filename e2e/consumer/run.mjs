@@ -2,9 +2,11 @@ import {
   cpSync,
   mkdirSync,
   readFileSync,
+  renameSync,
   rmSync,
   writeFileSync,
 } from "node:fs";
+import { createHash } from "node:crypto";
 import { join, resolve } from "node:path";
 
 const here = import.meta.dirname;
@@ -46,6 +48,12 @@ for (const file of [
   "install.spec.ts",
   "os.spec.ts",
   "desktop.spec.ts",
+  "pwa.spec.ts",
+  "pwa-native.spec.ts",
+  "pwa-window.ps1",
+  "frame.spec.ts",
+  "frame.spec.ts-snapshots",
+  "public",
   "terminal.spec.ts",
   "src",
 ])
@@ -78,8 +86,16 @@ for (const name of ["os", "ui"]) {
   const { version } = JSON.parse(
     readFileSync(join(dir, "package.json"), "utf8"),
   );
-  manifest.dependencies[`@labpane/${name}`] =
-    `file:./labpane-${name}-${version}.tgz`;
+  // Different local worktrees can pack different bytes at the same version.
+  // Give Bun an unambiguous file identity instead of reusing a cached tarball.
+  const archive = join(work, `labpane-${name}-${version}.tgz`);
+  const hash = createHash("sha256")
+    .update(readFileSync(archive))
+    .digest("hex")
+    .slice(0, 16);
+  const packed = `labpane-${name}-${version}-${hash}.tgz`;
+  renameSync(archive, join(work, packed));
+  manifest.dependencies[`@labpane/${name}`] = `file:./${packed}`;
 }
 writeFileSync(
   join(work, "package.json"),

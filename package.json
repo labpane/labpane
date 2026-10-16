@@ -5,15 +5,17 @@
   "workspaces": [
     "packages/os",
     "packages/ui",
+    "packages/cli",
     "example"
   ],
   "scripts": {
     "build": "bun run --cwd packages/os build && bun run --cwd packages/ui build",
-    "test": "bun test packages",
+    "test": "bun test packages/os packages/ui && npm run test:cli",
+    "test:cli": "node --test packages/cli/test/*.test.mjs",
     "lint": "oxlint --deny-warnings",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
-    "check:packages": "publint packages/os && publint packages/ui && attw --pack packages/os --profile esm-only && attw --pack packages/ui --profile esm-only",
+    "check:packages": "publint packages/os && publint packages/ui && publint packages/cli && attw --pack packages/os --profile esm-only && attw --pack packages/ui --profile esm-only",
     "changeset": "changeset",
     "version-packages": "changeset version && bun install --lockfile-only"
   },

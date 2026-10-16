@@ -1,0 +1,14 @@
+/* App sizing only. Component appearance comes from @labpane/ui and @labpane/os. */
+:root {
+  font-family: system-ui, sans-serif;
+}
+body {
+  margin: 0;
+}
+.app {
+  height: 100dvh;
+}
+.brand {
+  padding: 0 12px;
+  font-size: 13px;
+}

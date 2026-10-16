@@ -30,6 +30,7 @@ import {
 import type { TabDrag } from "./tabs.js";
 import { hasOpenOverlay } from "./overlay.js";
 import { frameTask } from "./frame-task.js";
+import type { TitlebarArea } from "./pwa.js";
 
 export const position = (box: Box): CSSProperties => ({
   left: box.x,
@@ -93,7 +94,9 @@ export function WorkspaceSurface({
   header,
   content,
   menu,
+  titlebarArea,
 }: {
+  titlebarArea?: TitlebarArea;
   layout: Layout;
   change: (layout: Layout) => void;
   menu?: WorkspaceMenu;
@@ -345,30 +348,46 @@ export function WorkspaceSurface({
           minHeight: required.y,
         }}
       >
-        {regions.map(({ pane, box }, index) => (
-          <div
-            key={pane.id}
-            data-pane-header={pane.id}
-            data-top={box.y === 0 || undefined}
-            className="lab-pane-header"
-            style={{
-              ...position({ ...box, height: tabHeight }),
-              transitionDuration: transition
-                ? "var(--workspace-duration, 180ms)"
-                : "0ms",
-            }}
-          >
-            <PaneHeader
-              pane={pane}
-              first={index === 0}
-              last={pane.id === topRight}
-              docking={stableDocking}
-              insertion={preview?.pane === pane.id ? preview.index : undefined}
-              board={board}
-              render={header}
-            />
-          </div>
-        ))}
+        {regions.map(({ pane, box }, index) => {
+          const overlay = titlebarArea && box.y < titlebarArea.height;
+          const left = overlay ? Math.max(box.x, titlebarArea.left) : box.x;
+          const right = overlay
+            ? Math.min(box.x + box.width, titlebarArea.right)
+            : box.x + box.width;
+          return (
+            <div
+              key={pane.id}
+              data-pane-header={pane.id}
+              data-top={box.y === 0 || undefined}
+              className="lab-pane-header"
+              data-titlebar-overlay={overlay ? "" : undefined}
+              style={{
+                ...position({
+                  ...box,
+                  x: left,
+                  width: Math.max(0, right - left),
+                  height: tabHeight,
+                }),
+                transitionDuration:
+                  transition && !overlay
+                    ? "var(--workspace-duration, 180ms)"
+                    : "0ms",
+              }}
+            >
+              <PaneHeader
+                pane={pane}
+                first={index === 0}
+                last={pane.id === topRight}
+                docking={stableDocking}
+                insertion={
+                  preview?.pane === pane.id ? preview.index : undefined
+                }
+                board={board}
+                render={header}
+              />
+            </div>
+          );
+        })}
         {content(regions, transition, lifted)}
         {dividers.map(({ split, bounds, ratio, low, high, ...box }) => {
           const axis = split.axis,

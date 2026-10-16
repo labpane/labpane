@@ -19,6 +19,10 @@
       "types": "./dist/os/index.d.ts",
       "default": "./dist/index.js"
     },
+    "./pwa": {
+      "types": "./dist/os/pwa.d.ts",
+      "default": "./dist/pwa.js"
+    },
     "./styles.css": {
       "types": "./dist/styles.d.ts",
       "default": "./dist/styles.css"
@@ -39,7 +43,7 @@
     "directory": "packages/os"
   },
   "scripts": {
-    "build": "node -e \"require('node:fs').rmSync('dist', { recursive: true, force: true })\" && tsc -p tsconfig.json && esbuild index.ts --bundle --sourcemap --format=esm --packages=external --outfile=dist/index.js && esbuild styles.css --minify --outfile=dist/styles.css && node ../package-assets.mjs",
+    "build": "node -e \"require('node:fs').rmSync('dist', { recursive: true, force: true })\" && tsc -p tsconfig.json && esbuild index.ts pwa.ts --bundle --sourcemap --format=esm --packages=external --outdir=dist && esbuild styles.css --minify --outfile=dist/styles.css && node ../package-assets.mjs",
     "test": "bun test",
     "prepack": "npm run build"
   },

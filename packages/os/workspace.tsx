@@ -27,6 +27,8 @@ import {
   WorkspaceDensity,
   TabLinks,
   useTabLinks,
+  MinimumTabHeight,
+  densitySize,
   useWorkspaceIds,
   useTabSize,
   type Density,
@@ -42,6 +44,7 @@ import {
 } from "./tab-history.js";
 import { useBrowserHistory } from "./browser-history.js";
 import { hasOpenOverlay } from "./overlay.js";
+import type { WindowControlsOverlay } from "./pwa.js";
 
 export type WorkspaceTab = {
   key: string;
@@ -65,6 +68,8 @@ export type WorkspaceProps<T extends WorkspaceTab> = {
   // titleBar marks the top row of toolbars as a desktop window's title bar, which runs from the
   // top of the window, so their controls centre in it like the window buttons do
   titleBar?: boolean;
+  /** Use an installed PWA's title-bar area, keeping the browser's native controls. */
+  windowControlsOverlay?: WindowControlsOverlay;
   toolbar?: (pane: WorkspacePane) => ReactNode;
   menu?: WorkspaceMenu;
   confirmClose?: (tab: T) => boolean | Promise<boolean>;
@@ -108,6 +113,7 @@ function WorkspaceContent<T extends WorkspaceTab>({
   leading,
   trailing,
   titleBar,
+  windowControlsOverlay,
   toolbar,
   menu,
   confirmClose,
@@ -123,7 +129,11 @@ function WorkspaceContent<T extends WorkspaceTab>({
     () => new Map(tabs.map((tab) => [tab.key, tab])),
     [tabs],
   );
-  const { height, contentHeight, logoSize } = useTabSize();
+  const {
+    height: tabHeight,
+    contentHeight,
+    logoSize,
+  } = useMemo(() => densitySize(density), [density]);
   const corner = useRef<HTMLDivElement>(null);
   const [reserve, setReserve] = useState(0);
   const hasTrailing = !!trailing;
@@ -134,7 +144,8 @@ function WorkspaceContent<T extends WorkspaceTab>({
     observer.observe(element);
     return () => observer.disconnect();
   }, [hasTrailing]);
-  const root = useRef<HTMLDivElement>(null);
+  const ownRoot = useRef<HTMLDivElement>(null);
+  const root = windowControlsOverlay?.root ?? ownRoot;
   // inset is how far the workspace sits below the top of the window, which is part of the title bar
   const [inset, setInset] = useState(0);
   useLayoutEffect(() => {
@@ -143,7 +154,9 @@ function WorkspaceContent<T extends WorkspaceTab>({
     measure();
     addEventListener("resize", measure);
     return () => removeEventListener("resize", measure);
-  }, [titleBar]);
+  }, [titleBar, root]);
+  const titlebarArea = windowControlsOverlay?.area;
+  const height = Math.max(tabHeight, titlebarArea?.height ?? 0);
   const preferredPane = useRef<string | undefined>(undefined);
   const visibleLayout = reconcileLayout(
     layout,
@@ -219,7 +232,7 @@ function WorkspaceContent<T extends WorkspaceTab>({
     focus: links.focus,
   });
   return (
-    <>
+    <MinimumTabHeight.Provider value={titlebarArea?.height ?? 0}>
       {/* oxlint-disable-next-line jsx-a11y/no-noninteractive-element-interactions -- F6 moves between panes */}
       <div
         ref={root}
@@ -227,6 +240,7 @@ function WorkspaceContent<T extends WorkspaceTab>({
         aria-label="Workspace"
         data-density={density}
         data-title-bar={titleBar || undefined}
+        data-window-controls-overlay={titlebarArea ? "" : undefined}
         style={
           {
             "--lab-tab-height": `${height}px`,
@@ -259,11 +273,16 @@ function WorkspaceContent<T extends WorkspaceTab>({
         }}
       >
         {trailing && (
-          <div ref={corner} className="lab-trailing" style={{ height }}>
+          <div
+            ref={corner}
+            className="lab-trailing"
+            style={{ height, right: titlebarArea?.insetRight }}
+          >
             {trailing}
           </div>
         )}
         <WorkspaceSurface
+          titlebarArea={titlebarArea}
           layout={visibleLayout}
           change={change}
           menu={menu}
@@ -361,7 +380,7 @@ function WorkspaceContent<T extends WorkspaceTab>({
           )}
         />
       </div>
-    </>
+    </MinimumTabHeight.Provider>
   );
 }
 

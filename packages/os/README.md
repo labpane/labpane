@@ -109,6 +109,41 @@ type Layout = Pane | Split;
 
 ## Desktop windows
 
+### Installed PWAs
+
+Enable the browser's window-controls overlay in your web app manifest:
+
+```json
+{
+  "display": "standalone",
+  "display_override": ["window-controls-overlay", "standalone"]
+}
+```
+
+Then opt your top-level workspace into the available title-bar area:
+
+```tsx
+import { Workspace } from "@labpane/os";
+import { useWindowControlsOverlay } from "@labpane/os/pwa";
+
+function App() {
+  const overlay = useWindowControlsOverlay();
+  return <Workspace windowControlsOverlay={overlay} {...workspaceProps} />;
+}
+```
+
+The PWA browser integration is a separate entry point. Importing `Workspace` or using `@labpane/ui` alone does not include that module. Pass `false` to the hook to temporarily disable the integration; it then installs no observers or event listeners.
+
+Place the workspace at the top of the viewport; remove any separate title-bar spacer. When the installed browser reports a visible overlay, Labpane places the top row of tabs inside its safe rectangle, leaving room for the browser's real window buttons on either side. Panel content keeps the full width. Geometry changes update the layout, and dense tabs get a minimum height sufficient to clear the native title bar. All pane headers share that minimum height while the overlay is active.
+
+Set the app's manifest `theme_color` and document `<meta name="theme-color">` to the workspace background color. Update the meta value when the app changes theme so the browser's caption area matches. The generated starter reads `--lab-background` on theme changes; the library leaves document metadata to the application.
+
+The blank toolbar area drags the window. Tabs, toolbar actions, and leading/trailing slots remain interactive. Mark a noninteractive leading element with `data-window-drag` if it should also drag; use `data-window-no-drag` for custom interactive content. Don't render `WindowControls` or supply a `WindowHost` for this path: the installed browser owns window actions and caption buttons.
+
+Ordinary browser tabs, unsupported browsers, disabled overlays, and fullscreen use the normal layout. The browser controls whether the overlay is enabled; Chromium may require the user to choose **Hide title bar**. A workspace below the title-bar area is left alone. Installability, service workers, and the manifest remain application responsibilities. See the [browser platform documentation](https://learn.microsoft.com/en-us/microsoft-edge/progressive-web-apps/how-to/window-controls-overlay) and [PWA test fixture](../../e2e/consumer/README.md).
+
+### Native shells
+
 To run the workspace in a frameless desktop window (Wails, Tauri, Electron, or your own shell), describe the window as a `WindowHost` and the workspace becomes its title bar:
 
 ```tsx
@@ -143,6 +178,8 @@ function App() {
 - `titleBar` centres the top row's toolbar controls in the title bar, which runs from the top of the window to the top pane, the same as the window buttons. Without it they centre in the toolbar, below any space the page leaves above the workspace.
 - `useWindowFrame` moves the window when an empty part of a toolbar is dragged, maximises it on a double click, resizes it from its edges, and toggles full screen with F11, or Ctrl+Cmd+F on macOS. Add `data-window-drag` to other elements that should move the window.
 - `useFullscreen(host)` returns `[fullscreen, setFullscreen]`. Without a host it uses the browser's Fullscreen API.
+
+The host interface has no Wails, Go, Tauri, or Electron dependency. Applications own their shell and adapt its public APIs to these callbacks. If the shell already handles dragging and edge resizing, omit `drag` and `resize` to avoid sending duplicate commands. The [native desktop fixture](../../e2e/wails/README.md) demonstrates this boundary and checks real window actions with Wails. Its shell is test code, not part of this package.
 
 ## Keyboard
 
