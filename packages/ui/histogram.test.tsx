@@ -5,6 +5,44 @@ import { HistogramChart, HistogramSparkline } from "./histogram.js";
 
 afterEach(cleanup);
 
+it("updates cached labels, totals and selection callbacks when data changes", () => {
+  const oldSelect = mock();
+  const select = mock();
+  const props = { label: "Distribution", xLabel: "Value", unit: "samples" };
+  const view = render(
+    <HistogramChart
+      {...props}
+      onSelect={oldSelect}
+      bins={[
+        { from: 1, to: 2, count: 20 },
+        { from: 3, to: 4, count: 0 },
+      ]}
+    />,
+  );
+  const chart = screen.getByRole("slider");
+  fireEvent.keyDown(chart, { key: "End" });
+  view.rerender(
+    <HistogramChart
+      {...props}
+      unit="requests"
+      onSelect={select}
+      bins={[
+        { from: 1, to: 2, count: 20 },
+        { from: 10, to: 20, count: 40 },
+      ]}
+    />,
+  );
+  expect(chart.getAttribute("aria-valuetext")).toBe(
+    "Value 10 to 20: 40 requests (66.7%)",
+  );
+  expect(screen.getByText("60 requests")).toBeTruthy();
+  fireEvent.keyDown(chart, { key: "Enter" });
+  expect(select).toHaveBeenCalledWith(1);
+  expect(oldSelect).not.toHaveBeenCalled();
+  view.rerender(<HistogramChart {...props} bins={[]} onSelect={select} />);
+  expect(screen.queryByRole("slider")).toBeNull();
+});
+
 it("inspects exact ranges and empty bins with the keyboard, then selects a bar", () => {
   const select = mock((_index: number) => {});
   const ref = createRef<HTMLDivElement>();

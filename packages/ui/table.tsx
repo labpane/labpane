@@ -204,6 +204,62 @@ function HeaderCell<T>({
   );
 }
 
+// Keep cell rendering independent of row selection and focus.
+function RowCells<T>({
+  row,
+  columns,
+  index,
+  rowHeight,
+}: {
+  row: T;
+  columns: TableColumn<T>[];
+  index: number;
+  rowHeight?: number;
+}) {
+  return (
+    <>
+      {columns.map((column) => {
+        const Cell = column.rowHeader ? "th" : "td";
+        const content = column.cell(row, index);
+        return (
+          <Cell
+            key={column.id}
+            scope={column.rowHeader ? "row" : undefined}
+            className={cn(
+              cellPadding,
+              "labui:align-middle",
+              column.rowHeader &&
+                "labui:text-left labui:font-medium labui:text-foreground",
+              typeof column.className === "function"
+                ? column.className(row, index)
+                : column.className,
+              columnClasses(column),
+              rowHeight &&
+                "labui:overflow-hidden labui:py-0 labui:text-ellipsis labui:whitespace-nowrap",
+            )}
+          >
+            {rowHeight ? (
+              <div
+                className={cn(
+                  "labui:flex labui:items-center labui:overflow-hidden",
+                  (column.numeric || column.align === "end") &&
+                    "labui:justify-end",
+                )}
+                style={{ height: rowHeight - 1 }}
+              >
+                {content}
+              </div>
+            ) : (
+              content
+            )}
+          </Cell>
+        );
+      })}
+    </>
+  );
+}
+const MemoRowCells = React.memo(RowCells) as typeof RowCells;
+
 function SkeletonRows<T>({
   columns,
   count,
@@ -497,43 +553,12 @@ function Table<T>({
                           : undefined
                       }
                     >
-                      {columns.map((column) => {
-                        const Cell = column.rowHeader ? "th" : "td";
-                        const content = column.cell(row, index);
-                        return (
-                          <Cell
-                            key={column.id}
-                            scope={column.rowHeader ? "row" : undefined}
-                            className={cn(
-                              cellPadding,
-                              "labui:align-middle",
-                              column.rowHeader &&
-                                "labui:text-left labui:font-medium labui:text-foreground",
-                              typeof column.className === "function"
-                                ? column.className(row, index)
-                                : column.className,
-                              columnClasses(column),
-                              rowHeight &&
-                                "labui:overflow-hidden labui:py-0 labui:text-ellipsis labui:whitespace-nowrap",
-                            )}
-                          >
-                            {rowHeight ? (
-                              <div
-                                className={cn(
-                                  "labui:flex labui:items-center labui:overflow-hidden",
-                                  (column.numeric || column.align === "end") &&
-                                    "labui:justify-end",
-                                )}
-                                style={{ height: rowHeight - 1 }}
-                              >
-                                {content}
-                              </div>
-                            ) : (
-                              content
-                            )}
-                          </Cell>
-                        );
-                      })}
+                      <MemoRowCells
+                        row={row}
+                        columns={columns}
+                        index={index}
+                        rowHeight={rowHeight}
+                      />
                     </tr>
                   );
                 })}

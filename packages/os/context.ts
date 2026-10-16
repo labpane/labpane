@@ -73,15 +73,18 @@ export function useWorkspaceIds() {
 export const TabLinks = createContext(new Map<string, HTMLElement>());
 export function useTabLinks() {
   const links = useContext(TabLinks);
-  return {
-    register: (key: string) => (element: HTMLElement | null) => {
-      if (element) links.set(key, element);
-      else links.delete(key);
-    },
-    get: (key: string) => links.get(key),
-    focus: (key: string) =>
-      requestAnimationFrame(() => links.get(key)?.focus()),
-  };
+  return useMemo(
+    () => ({
+      register: (key: string) => (element: HTMLElement | null) => {
+        if (element) links.set(key, element);
+        else links.delete(key);
+      },
+      get: (key: string) => links.get(key),
+      focus: (key: string) =>
+        requestAnimationFrame(() => links.get(key)?.focus()),
+    }),
+    [links],
+  );
 }
 
 export type WorkspaceAction = {

@@ -93,10 +93,26 @@ const HistogramChart = React.forwardRef<HTMLDivElement, HistogramChartProps>(
     const activeIndex = Math.min(inspected, bins.length - 1);
     const active = bins[activeIndex];
     const right = width - 20;
-    const max = tallest(bins);
-    const total = bins.reduce((sum, bin) => sum + bin.count, 0);
+    // Labels depend on bins, not the container width.
+    const data = React.useMemo(() => {
+      const max = tallest(bins);
+      const total = bins.reduce((sum, bin) => sum + bin.count, 0);
+      return {
+        max,
+        total,
+        descriptions: bins.map(describeBin),
+        counts: bins.map((bin) => formatNumber(bin.count)),
+        ticks: [0, 0.5, 1].map((fraction) =>
+          formatNumber(Math.round(max * fraction)),
+        ),
+        totalLabel: formatNumber(total),
+        first: bins.length ? formatNumber(bins[0]!.from) : "",
+        last: bins.length ? formatNumber(bins.at(-1)!.to) : "",
+      };
+    }, [bins]);
+    const { max, total } = data;
     const barWidth = (right - LEFT) / bins.length;
-    const count = active ? `${formatNumber(active.count)} ${unit}` : "";
+    const count = active ? `${data.counts[activeIndex]} ${unit}` : "";
     const share =
       active && total > 0
         ? ` (${((active.count / total) * 100).toFixed(1)}%)`
@@ -136,7 +152,7 @@ const HistogramChart = React.forwardRef<HTMLDivElement, HistogramChartProps>(
         <div className="labui:flex labui:flex-wrap labui:items-center labui:justify-between labui:gap-2 labui:border-b labui:px-4 labui:py-3 labui:text-sm">
           <span className="labui:font-medium">{label}</span>
           <span className="labui:text-muted-foreground labui:tabular-nums">
-            {formatNumber(total)} {unit}
+            {data.totalLabel} {unit}
           </span>
         </div>
         {active ? (
@@ -145,7 +161,8 @@ const HistogramChart = React.forwardRef<HTMLDivElement, HistogramChartProps>(
               className="labui:px-4 labui:pt-3 labui:text-sm labui:tabular-nums"
               aria-live="polite"
             >
-              {xLabel} {describeBin(active)}: <strong>{count}</strong>
+              {xLabel} {data.descriptions[activeIndex]}:{" "}
+              <strong>{count}</strong>
               {share}
             </div>
             <svg
@@ -158,7 +175,7 @@ const HistogramChart = React.forwardRef<HTMLDivElement, HistogramChartProps>(
               aria-valuemin={0}
               aria-valuemax={bins.length - 1}
               aria-valuenow={activeIndex}
-              aria-valuetext={`${xLabel} ${describeBin(active)}: ${count}${share}`}
+              aria-valuetext={`${xLabel} ${data.descriptions[activeIndex]}: ${count}${share}`}
               tabIndex={0}
               onPointerMove={(event) =>
                 setInspected(binAt(event.clientX, event.currentTarget))
@@ -166,7 +183,7 @@ const HistogramChart = React.forwardRef<HTMLDivElement, HistogramChartProps>(
               onClick={click}
               onKeyDown={keydown}
             >
-              {[0, 0.5, 1].map((fraction) => {
+              {[0, 0.5, 1].map((fraction, index) => {
                 const y = BOTTOM - fraction * (BOTTOM - TOP);
                 return (
                   <g key={fraction} aria-hidden="true">
@@ -181,7 +198,7 @@ const HistogramChart = React.forwardRef<HTMLDivElement, HistogramChartProps>(
                       fill="var(--labui-muted-foreground)"
                       fontSize={11}
                     >
-                      {formatNumber(Math.round(max * fraction))}
+                      {data.ticks[index]}
                     </text>
                   </g>
                 );
@@ -223,7 +240,7 @@ const HistogramChart = React.forwardRef<HTMLDivElement, HistogramChartProps>(
                 fill="var(--labui-muted-foreground)"
                 fontSize={11}
               >
-                {formatNumber(bins[0]!.from)}
+                {data.first}
               </text>
               <text
                 x={right}
@@ -232,7 +249,7 @@ const HistogramChart = React.forwardRef<HTMLDivElement, HistogramChartProps>(
                 fill="var(--labui-muted-foreground)"
                 fontSize={11}
               >
-                {formatNumber(bins.at(-1)!.to)}
+                {data.last}
               </text>
               <text
                 x={(LEFT + right) / 2}

@@ -1,4 +1,5 @@
 import { densityPresets, useTabSize } from "./context.js";
+import { memo } from "react";
 
 type Point = [number, number];
 const reach = 16;
@@ -98,7 +99,7 @@ export function paneShape(
   return `${tabShape(morph ? leftGap : reach, morph ? rightGap : reach, size)[1]}${rightCorner} V${bottom - 15.5} A15.5 15.5 0 0 1 ${right - 15.5} ${bottom} H${left + 15.5} A15.5 15.5 0 0 1 ${left} ${bottom - 15.5} V${cornerBottom}${leftCorner} Z`;
 }
 
-export function TabSurface({
+export const TabSurface = memo(function TabSurface({
   selected,
   keyboardFocus = false,
   width,
@@ -134,4 +135,4 @@ export function TabSurface({
       )}
     </svg>
   );
-}
+});

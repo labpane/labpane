@@ -6,7 +6,9 @@ import {
 } from "./context.js";
 import {
   Fragment,
+  memo,
   useLayoutEffect,
+  useMemo,
   useRef,
   useState,
   type ReactNode,
@@ -27,6 +29,7 @@ import {
 } from "./layout.js";
 import type { TabDrag } from "./tabs.js";
 import { hasOpenOverlay } from "./overlay.js";
+import { frameTask } from "./frame-task.js";
 
 export const position = (box: Box): CSSProperties => ({
   left: box.x,
@@ -44,6 +47,45 @@ export type Docking = {
   insertion?: number;
 };
 type Preview = { key: string; pane?: string; edge?: Edge; index?: number };
+type Header = (
+  pane: Pane,
+  first: boolean,
+  last: boolean,
+  docking: Docking,
+  surface: (key?: string) => HTMLElement | null,
+) => ReactNode;
+
+const PaneHeader = memo(function PaneHeader({
+  pane,
+  first,
+  last,
+  docking,
+  insertion,
+  board,
+  render,
+}: {
+  pane: Pane;
+  first: boolean;
+  last: boolean;
+  docking: Docking;
+  insertion?: number;
+  board: { current: HTMLDivElement | null };
+  render: Header;
+}) {
+  const ids = useWorkspaceIds();
+  return render(
+    pane,
+    first,
+    last,
+    { ...docking, insertion },
+    (key = pane.active) =>
+      board.current?.querySelector<HTMLElement>(
+        key
+          ? `#${CSS.escape(ids.panel(key))}`
+          : `[data-pane-sheet="${CSS.escape(pane.id)}"]:not([hidden]):not([data-drag-content])`,
+      ) ?? null,
+  );
+});
 
 export function WorkspaceSurface({
   layout,
@@ -55,13 +97,7 @@ export function WorkspaceSurface({
   layout: Layout;
   change: (layout: Layout) => void;
   menu?: WorkspaceMenu;
-  header: (
-    pane: Pane,
-    first: boolean,
-    last: boolean,
-    docking: Docking,
-    surface: (key?: string) => HTMLElement | null,
-  ) => ReactNode;
+  header: Header;
   content: (
     panes: { pane: Pane; box: Box }[],
     transition: boolean,
@@ -81,6 +117,17 @@ export function WorkspaceSurface({
   const [preview, setPreview] = useState<Preview>();
   const previewRef = useRef<Preview | undefined>(undefined);
   const [resizing, setResizing] = useState(false);
+  type ResizeDraft = { base: Layout; layout: Layout };
+  const [resizeDraft, setResizeDraft] = useState<ResizeDraft>();
+  const resizeDraftRef = useRef<ResizeDraft | undefined>(undefined);
+  const displayedLayout =
+    resizeDraft?.base === layout ? resizeDraft.layout : layout;
+  const cancelResize = () => {
+    resizePointer.cancel();
+    resizeDraftRef.current = undefined;
+    setResizeDraft(undefined);
+    setResizing(false);
+  };
   const geometry = [
     size.width,
     size.height,
@@ -102,12 +149,23 @@ export function WorkspaceSurface({
     return () => observer.disconnect();
   }, []);
   const { leaves, dividers } = layoutBoxes(
-      layout,
+      displayedLayout,
       size.width,
       size.height,
       gutter,
     ),
-    required = minimumSize(layout, gutter);
+    required = minimumSize(displayedLayout, gutter);
+  const [resizePointer] = useState(() =>
+    frameTask<() => void>((resize) => resize()),
+  );
+  useLayoutEffect(() => {
+    addEventListener("blur", cancelResize);
+    return () => {
+      resizePointer.cancel();
+      removeEventListener("blur", cancelResize);
+    };
+    // oxlint-disable-next-line react-hooks/exhaustive-deps -- cancellation only uses stable setters, refs, and the frame task
+  }, [resizePointer]);
   const show = (next?: Preview) => {
     if (
       previewRef.current?.pane === next?.pane &&
@@ -226,15 +284,38 @@ export function WorkspaceSurface({
     },
   };
   const lifted = preview?.key;
+  const operations = useRef(docking);
+  useLayoutEffect(() => {
+    operations.current = docking;
+  });
+  const paneCount = leaves.length;
+  const stableDocking = useMemo<Docking>(
+    () => ({
+      paneCount,
+      move: (drag) => operations.current.move(drag),
+      drop: () => operations.current.drop(),
+      cancel: () => operations.current.cancel(),
+      split: (key, edge) => operations.current.split(key, edge),
+      next: (key) => operations.current.next(key),
+    }),
+    [paneCount],
+  );
+  // Reuse the fallback pane until its layout or lifted tab changes.
+  const sourcePreview = useMemo(() => {
+    if (!lifted) return;
+    const pane = panes(displayedLayout).find((pane) =>
+      pane.tabs.includes(lifted),
+    );
+    if (!pane) return;
+    const remaining = pane.tabs.filter((key) => key !== lifted);
+    return {
+      ...pane,
+      active:
+        remaining[Math.min(pane.tabs.indexOf(lifted), remaining.length - 1)],
+    };
+  }, [displayedLayout, lifted]);
   const regions = leaves.map(({ pane, ...box }) => {
-    if (lifted && pane.tabs.includes(lifted)) {
-      const remaining = pane.tabs.filter((key) => key !== lifted);
-      pane = {
-        ...pane,
-        active:
-          remaining[Math.min(pane.tabs.indexOf(lifted), remaining.length - 1)],
-      };
-    }
+    if (sourcePreview?.id === pane.id) pane = sourcePreview;
     if (preview?.pane !== pane.id || !preview.edge) return { pane, box };
     const drop = dropRegion(box, preview.edge, gutter);
     if (preview.edge === "left")
@@ -277,22 +358,15 @@ export function WorkspaceSurface({
                 : "0ms",
             }}
           >
-            {header(
-              pane,
-              index === 0,
-              pane.id === topRight,
-              {
-                ...docking,
-                insertion:
-                  preview?.pane === pane.id ? preview.index : undefined,
-              },
-              (key = pane.active) =>
-                board.current?.querySelector<HTMLElement>(
-                  key
-                    ? `[id="${CSS.escape(ids.panel(key))}"]`
-                    : `[data-pane-sheet="${CSS.escape(pane.id)}"]:not([hidden]):not([data-drag-content])`,
-                ) ?? null,
-            )}
+            <PaneHeader
+              pane={pane}
+              first={index === 0}
+              last={pane.id === topRight}
+              docking={stableDocking}
+              insertion={preview?.pane === pane.id ? preview.index : undefined}
+              board={board}
+              render={header}
+            />
           </div>
         ))}
         {content(regions, transition, lifted)}
@@ -301,13 +375,19 @@ export function WorkspaceSurface({
             horizontal = axis === "x",
             dimension = horizontal ? "width" : "height";
           const primary = panes(split.first).filter((p) => p.active);
-          const resize = (value: number) =>
-            change(
-              updateLayout(layout, split.id, (node) => ({
-                ...node,
-                ratio: Math.max(low, Math.min(high, value)),
-              })),
-            );
+          const resize = (value: number, preview = false) => {
+            const next = updateLayout(displayedLayout, split.id, (node) => ({
+              ...node,
+              ratio: Math.max(low, Math.min(high, value)),
+            }));
+            if (preview) {
+              resizeDraftRef.current = { base: layout, layout: next };
+              setResizeDraft(resizeDraftRef.current);
+            } else {
+              cancelResize();
+              change(next);
+            }
+          };
           const target = (
             <div
               role="separator"
@@ -341,16 +421,27 @@ export function WorkspaceSurface({
               onPointerMove={(event) => {
                 if (!event.currentTarget.hasPointerCapture(event.pointerId))
                   return;
-                const b = board.current!.getBoundingClientRect();
-                const coordinate = horizontal
-                  ? event.clientX - b.left
-                  : event.clientY - b.top;
-                resize(
-                  (coordinate - bounds[axis]) /
-                    (bounds[dimension] - gutter[axis]),
-                );
+                const { clientX, clientY } = event;
+                resizePointer.schedule(() => {
+                  const b = board.current!.getBoundingClientRect();
+                  const coordinate = horizontal
+                    ? clientX - b.left
+                    : clientY - b.top;
+                  resize(
+                    (coordinate - bounds[axis]) /
+                      (bounds[dimension] - gutter[axis]),
+                    true,
+                  );
+                });
               }}
-              onLostPointerCapture={() => setResizing(false)}
+              onPointerUp={() => {
+                resizePointer.flush();
+                const draft = resizeDraftRef.current;
+                if (draft?.base === layout) change(draft.layout);
+                cancelResize();
+              }}
+              onPointerCancel={cancelResize}
+              onLostPointerCapture={cancelResize}
               onKeyDown={(event) => {
                 if (hasOpenOverlay()) return;
                 const step = event.shiftKey ? 0.1 : 0.02;
