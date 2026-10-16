@@ -375,15 +375,20 @@ export function WorkspaceTabs({
     const nav = navRef.current,
       strip = stripRef.current;
     if (!nav || !strip || !dragBoundary) return;
-    const trailing =
-      strip.parentElement!.nextElementSibling?.getBoundingClientRect().width ??
-      0;
+    const toolbarStyle = getComputedStyle(dragBoundary);
+    const gap = parseFloat(toolbarStyle.columnGap) || 0;
+    let trailing = parseFloat(toolbarStyle.paddingRight) || 0;
+    for (
+      let element = strip.parentElement!.nextElementSibling;
+      element;
+      element = element.nextElementSibling
+    )
+      trailing += element.getBoundingClientRect().width + gap;
     const availableWidth = Math.max(
       0,
       dragBoundary.getBoundingClientRect().right -
         strip.getBoundingClientRect().left -
-        trailing -
-        4,
+        trailing,
     );
     const inserting = docking.insertion === undefined ? 0 : 1;
     const count = items.length - (drag.current?.detached ? 1 : 0) + inserting;
