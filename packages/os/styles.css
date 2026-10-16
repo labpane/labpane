@@ -464,6 +464,9 @@
 
 .lab-ghost {
   position: fixed;
+  left: 0;
+  top: 0;
+  will-change: transform;
   z-index: 40;
   pointer-events: none;
   user-select: none;
@@ -483,7 +486,7 @@ body:has([data-dragged-tab]) * {
   top: 0 !important;
   width: var(--lab-drag-width) !important;
   height: var(--lab-drag-height) !important;
-  transform: translate(var(--lab-drag-x), var(--lab-drag-y));
+  will-change: transform;
   clip-path: inset(0 round 16px);
   border-color: transparent !important;
   pointer-events: none !important;

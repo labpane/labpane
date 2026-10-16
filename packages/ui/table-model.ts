@@ -138,13 +138,14 @@ export const num = <T>(
   value: (row: T) => number,
   digits = 0,
   headerDetail?: string,
-): TableColumn<T> => ({
-  ...column(id, header, value, (row) =>
-    value(row).toLocaleString("en-US", {
-      minimumFractionDigits: digits,
-      maximumFractionDigits: digits,
-    }),
-  ),
-  numeric: true,
-  headerDetail,
-});
+): TableColumn<T> => {
+  const formatter = new Intl.NumberFormat("en-US", {
+    minimumFractionDigits: digits,
+    maximumFractionDigits: digits,
+  });
+  return {
+    ...column(id, header, value, (row) => formatter.format(value(row))),
+    numeric: true,
+    headerDetail,
+  };
+};

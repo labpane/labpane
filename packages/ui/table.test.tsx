@@ -1,6 +1,13 @@
 import { afterEach, expect, it, mock } from "bun:test";
-import { cleanup, render, screen, within } from "@testing-library/react";
+import {
+  cleanup,
+  fireEvent,
+  render,
+  screen,
+  within,
+} from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import { createContext, useContext } from "react";
 import { Table, TableStack } from "./table.js";
 
 afterEach(cleanup);
@@ -31,6 +38,99 @@ const firstCells = () =>
     .getAllByRole("row")
     .slice(1)
     .map((row) => within(row).getAllByRole("cell")[0]?.textContent);
+
+it("reuses unchanged cell presentation while keeping selection, row data and callbacks current", () => {
+  const cell = mock(
+    (row: (typeof sessions)[number], index: number) => `${row.name}:${index}`,
+  );
+  const cachedColumns = [{ ...columns[0]!, cell }];
+  const rowKey = (row: (typeof sessions)[number]) => row.id;
+  const oldActivate = mock();
+  const activate = mock();
+  const props = { rows: sessions, columns: cachedColumns, rowKey };
+  const view = render(
+    <Table {...props} selectedKey="north" onRowActivate={oldActivate} />,
+  );
+  expect(cell).toHaveBeenCalledTimes(3);
+  view.rerender(
+    <Table {...props} selectedKey="atlas" onRowActivate={activate} />,
+  );
+  expect(cell).toHaveBeenCalledTimes(3);
+  const atlas = screen.getByText("Atlas:1").closest("tr")!;
+  expect(atlas.getAttribute("aria-selected")).toBe("true");
+  fireEvent.click(atlas);
+  expect(activate).toHaveBeenCalledWith(sessions[1]);
+  expect(oldActivate).not.toHaveBeenCalled();
+  view.rerender(
+    <Table
+      {...props}
+      rows={sessions.map((row, index) =>
+        index === 0 ? { ...row, name: "Updated" } : row,
+      )}
+    />,
+  );
+  expect(cell).toHaveBeenCalledTimes(4);
+  expect(screen.getByText("Updated:0")).toBeTruthy();
+  view.rerender(
+    <Table
+      {...props}
+      columns={[
+        {
+          ...cachedColumns[0]!,
+          cell: (row) => `New ${row.name}`,
+          className: "changed-cell",
+        },
+      ]}
+    />,
+  );
+  expect(screen.getByText("New Atlas").className).toContain("changed-cell");
+});
+
+it("refreshes cell indexes after sorting and geometry after changing row height", async () => {
+  const user = userEvent.setup();
+  const indexed = [
+    {
+      ...columns[0]!,
+      cell: (row: (typeof sessions)[number], index: number) =>
+        `${row.name}:${index}`,
+    },
+  ];
+  const props = {
+    rows: sessions,
+    columns: indexed,
+    rowKey: (row: (typeof sessions)[number]) => row.id,
+  };
+  const view = render(<Table {...props} />);
+  await user.click(screen.getByRole("button", { name: /^Session/ }));
+  expect(firstCells()).toEqual(["Atlas:0", "Mica:1", "Northstar:2"]);
+  view.rerender(<Table {...props} rowHeight={32} />);
+  expect(screen.getByText("Atlas:0").style.height).toBe("31px");
+});
+
+it("retains mounted cell state and delivers context updates through cached rows", () => {
+  const Context = createContext("old");
+  function Cell() {
+    return (
+      <label>
+        {useContext(Context)}
+        <input aria-label="Cell draft" defaultValue="Draft" />
+      </label>
+    );
+  }
+  const cells = [{ id: "draft", header: "Draft", cell: () => <Cell /> }];
+  const rows = sessions.slice(0, 1);
+  const rowKey = (row: (typeof sessions)[number]) => row.id;
+  const table = <Table rows={rows} columns={cells} rowKey={rowKey} />;
+  const view = render(<Context.Provider value="old">{table}</Context.Provider>);
+  fireEvent.change(screen.getByLabelText("Cell draft"), {
+    target: { value: "Keep me" },
+  });
+  view.rerender(<Context.Provider value="new">{table}</Context.Provider>);
+  expect(screen.getByText("new")).toBeTruthy();
+  expect((screen.getByLabelText("Cell draft") as HTMLInputElement).value).toBe(
+    "Keep me",
+  );
+});
 
 it("sorts from the headers and hides a column below its breakpoint", async () => {
   const user = userEvent.setup();

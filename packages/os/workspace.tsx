@@ -1,4 +1,7 @@
 import {
+  memo,
+  useCallback,
+  useDeferredValue,
   useEffect,
   useId,
   useLayoutEffect,
@@ -7,6 +10,7 @@ import {
   useState,
   type ReactNode,
   type CSSProperties,
+  type RefObject,
 } from "react";
 import { WorkspaceSurface, position } from "./surface.js";
 import { WorkspaceToolbar } from "./toolbar.js";
@@ -115,6 +119,10 @@ function WorkspaceContent<T extends WorkspaceTab>({
   empty,
 }: WorkspaceProps<T>) {
   const links = useTabLinks();
+  const tabsByKey = useMemo(
+    () => new Map(tabs.map((tab) => [tab.key, tab])),
+    [tabs],
+  );
   const { height, contentHeight, logoSize } = useTabSize();
   const corner = useRef<HTMLDivElement>(null);
   const [reserve, setReserve] = useState(0);
@@ -150,7 +158,7 @@ function WorkspaceContent<T extends WorkspaceTab>({
   const front = active ?? panes(visibleLayout)[0]?.active;
   const openers = useOpeners(tabs, front);
   const historyOf = useTabHistories(tabs);
-  const frontTab = tabs.find((tab) => tab.key === front);
+  const frontTab = tabsByKey.get(front ?? "");
   useBrowserHistory(history && frontTab ? historyOf(frontTab) : undefined);
   const dirty = useRef(new Map<symbol, string>());
   useEffect(() => {
@@ -164,7 +172,7 @@ function WorkspaceContent<T extends WorkspaceTab>({
     const pane = panes(visibleLayout).find((p) => p.tabs.includes(key));
     if (!pane) return;
     const remaining = pane.tabs.filter((k) => k !== key);
-    const opener = tabs.find((tab) => tab.key === key)?.opener;
+    const opener = tabsByKey.get(key)?.opener;
     const neighbor =
       next ??
       remaining.find((key) => key === opener) ??
@@ -184,7 +192,7 @@ function WorkspaceContent<T extends WorkspaceTab>({
   }
   function requestClose(key: string, next?: string) {
     if (![...dirty.current.values()].includes(key)) return close(key, next);
-    const tab = tabs.find((tab) => tab.key === key)!;
+    const tab = tabsByKey.get(key)!;
     const element = links.get(key);
     Promise.resolve(
       confirmClose
@@ -196,13 +204,14 @@ function WorkspaceContent<T extends WorkspaceTab>({
     });
   }
   function leave(key: string) {
-    const opener =
-      openers.get(key) ?? tabs.find((tab) => tab.key === key)?.opener;
-    requestClose(
-      key,
-      tabs.some((tab) => tab.key === opener) ? opener : undefined,
-    );
+    const opener = openers.get(key) ?? tabsByKey.get(key)?.opener;
+    requestClose(key, tabsByKey.has(opener ?? "") ? opener : undefined);
   }
+  // Stable services read current handlers and dirty state through refs.
+  const services = useRef(leave);
+  useLayoutEffect(() => {
+    services.current = leave;
+  });
   const paneOf = (pane: Pane): WorkspacePane => ({
     id: pane.id,
     tabs: pane.tabs,
@@ -269,7 +278,7 @@ function WorkspaceContent<T extends WorkspaceTab>({
               }}
               docking={docking}
               surface={surface}
-              items={pane.tabs.map((key) => tabs.find((t) => t.key === key)!)}
+              items={pane.tabs.map((key) => tabsByKey.get(key)!)}
               active={pane.active}
               onSelect={onSelect}
               onDuplicate={
@@ -324,22 +333,17 @@ function WorkspaceContent<T extends WorkspaceTab>({
                       if (active !== tab.key) onSelect(tab.key);
                     }}
                   >
-                    <TabScope
+                    <TabBody
+                      tab={tab}
+                      pane={region.pane}
+                      focus={links.focus}
                       active={tab.key === front}
                       visible={!hidden}
-                      leave={() => leave(tab.key)}
                       history={historyOf(tab)}
-                    >
-                      <UnsavedChanges.Provider
-                        value={(source, changed) =>
-                          changed
-                            ? dirty.current.set(source, tab.key)
-                            : dirty.current.delete(source)
-                        }
-                      >
-                        {children(tab, paneOf(region.pane))}
-                      </UnsavedChanges.Provider>
-                    </TabScope>
+                      services={services}
+                      dirty={dirty.current}
+                      render={children}
+                    />
                   </TabPanel>
                 );
               })}
@@ -361,31 +365,62 @@ function WorkspaceContent<T extends WorkspaceTab>({
   );
 }
 
-// TabScope tells a tab's content where it stands
-function TabScope({
-  active,
-  visible,
-  leave,
-  history,
-  children,
-}: {
+type TabBodyProps<T extends WorkspaceTab> = {
+  tab: T;
+  pane: Pane;
+  focus: (key: string) => void;
   active: boolean;
   visible: boolean;
-  leave: () => void;
   history: TabHistoryStore;
-  children: ReactNode;
-}) {
+  services: RefObject<(key: string) => void>;
+  dirty: Map<symbol, string>;
+  render: (tab: T, pane: WorkspacePane) => ReactNode;
+};
+const TabBody = memo(function TabBody<T extends WorkspaceTab>({
+  tab,
+  pane,
+  focus,
+  active,
+  visible,
+  history,
+  services,
+  dirty,
+  render,
+}: TabBodyProps<T>) {
+  const key = tab.key;
+  // The panel is keyed by tab.key; its stable callback reads the latest handler.
+  const [leave] = useState(() => () => services.current!(key));
+  const report = useCallback(
+    (source: symbol, changed: boolean) => {
+      if (changed) dirty.set(source, key);
+      else dirty.delete(source);
+    },
+    [dirty, key],
+  );
+  const requested = useMemo(
+    () => ({ render, tab, pane, focus }),
+    [render, tab, pane, focus],
+  );
+  const deferred = useDeferredValue(requested);
+  // Hidden pages update in the background; visible pages use current inputs.
+  const inputs = visible ? requested : deferred;
+  const content = useMemo(
+    () => inputs.render(inputs.tab, { ...inputs.pane, focus: inputs.focus }),
+    [inputs],
+  );
   const state = useMemo(() => ({ active, visible }), [active, visible]);
   return (
     <TabStateContext.Provider value={state}>
       <LeaveTab.Provider value={leave}>
         <TabHistoryContext.Provider value={history}>
-          {children}
+          <UnsavedChanges.Provider value={report}>
+            {content}
+          </UnsavedChanges.Provider>
         </TabHistoryContext.Provider>
       </LeaveTab.Provider>
     </TabStateContext.Provider>
   );
-}
+}) as <T extends WorkspaceTab>(props: TabBodyProps<T>) => ReactNode;
 
 function TabPanel({
   tab,

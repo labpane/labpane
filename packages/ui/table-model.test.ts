@@ -2,11 +2,42 @@ import { expect, it } from "bun:test";
 import {
   compareValues,
   nextSort,
+  num,
   pageOf,
   sortRows,
   visibleRowRange,
   type TableColumn,
 } from "./table-model.js";
+
+it("reuses numeric-column formatting without changing rounding or special values", () => {
+  for (const digits of [0, 2, 6]) {
+    const column = num<number>(
+      "value",
+      "Value",
+      (value) => value,
+      digits,
+      "units",
+    );
+    for (const value of [
+      0,
+      -0,
+      1.005,
+      -1234.5678,
+      1e20,
+      NaN,
+      Infinity,
+      -Infinity,
+    ])
+      expect(column.cell(value, 0)).toBe(
+        value.toLocaleString("en-US", {
+          minimumFractionDigits: digits,
+          maximumFractionDigits: digits,
+        }),
+      );
+    expect(column.numeric).toBe(true);
+    expect(column.headerDetail).toBe("units");
+  }
+});
 
 type Row = { name: string; size: number | null };
 const rows: Row[] = [

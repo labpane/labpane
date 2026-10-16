@@ -14,8 +14,13 @@ import { TabSurface, paneShape, tabShape } from "./frame.js";
 import type { WorkspaceTab } from "./workspace.js";
 import { useDragContent } from "./drag-content.js";
 import { hasOpenOverlay } from "./overlay.js";
+import { frameTask } from "./frame-task.js";
+import { geometryTask } from "./geometry-task.js";
 
 const motion = { duration: 160, easing: "cubic-bezier(.2,.8,.2,1)" };
+const pathData = (path: Element, value: string) => {
+  if (path.getAttribute("d") !== value) path.setAttribute("d", value);
+};
 
 export type TabDrag = {
   key: string;
@@ -38,7 +43,7 @@ export type WorkspaceTabsProps = {
 };
 
 export function WorkspaceTabs({
-  items,
+  items: sourceItems,
   active,
   onClose,
   onDuplicate,
@@ -49,25 +54,32 @@ export function WorkspaceTabs({
   docking,
   menu,
 }: WorkspaceTabsProps) {
+  // Keep reorder previews local until release to avoid rerendering page content.
+  const [draftOrder, setDraftOrder] = React.useState<string[]>();
+  const itemOrder = new Map(draftOrder?.map((key, index) => [key, index]));
+  const items = draftOrder
+    ? sourceItems
+        .slice()
+        .sort(
+          (a, b) =>
+            (itemOrder.get(a.key) ?? Infinity) -
+            (itemOrder.get(b.key) ?? Infinity),
+        )
+    : sourceItems;
   const ids = useWorkspaceIds();
   const tabLinks = useTabLinks();
   const content = useDragContent();
   const density = useTabSize();
   const [metrics, setMetrics] = React.useState({
-    available: Infinity,
+    width: density.width,
     overflow: false,
     left: false,
     right: false,
   });
   const measured = React.useRef(metrics);
-  const { available } = metrics;
   const size = {
       ...density,
-      width: fitTabWidth(
-        density.width,
-        available,
-        items.length + (docking.insertion === undefined ? 0 : 1),
-      ),
+      width: metrics.width,
     },
     { width: tabWidth, height, contentHeight } = size,
     width = tabWidth + 16;
@@ -84,7 +96,7 @@ export function WorkspaceTabs({
         offsetY: number;
         sheet: DOMRect;
         moved: boolean;
-        order: string[];
+        previewOrder?: string[];
       })
     | undefined
   >(undefined);
@@ -106,111 +118,135 @@ export function WorkspaceTabs({
     maskedOutline.current = null;
   };
   const settling = React.useRef<Animation | undefined>(undefined);
+  const animations = React.useRef(new Map<HTMLElement, Animation>());
+  const transitions = React.useRef(new Map<EventTarget, Set<string>>());
   const positions = React.useRef({
     order: "",
     tabs: new Map<string, number>(),
   });
-  const frame = React.useRef(0);
   const suppressClick = React.useRef(false);
-  const tabElement = (key: string) =>
-    navRef.current?.querySelector<HTMLElement>(
-      `a[data-tab="${CSS.escape(key)}"]`,
-    )?.parentElement;
-  const reveal = (key = active) => {
+  const tabElement = (key: string) => tabLinks.get(key)?.parentElement;
+  const readReveal = (key = active) => {
     const nav = navRef.current,
       tab = tabElement(key);
     if (!nav || !tab || drag.current?.moved || docking.insertion !== undefined)
       return;
-    nav.scrollLeft = Math.max(
+    const left = Math.max(
       tab.offsetLeft + tab.offsetWidth + 8 - nav.clientWidth,
       Math.min(nav.scrollLeft, tab.offsetLeft - 8),
     );
+    if (left === nav.scrollLeft) return;
+    return {
+      delta: left - nav.scrollLeft,
+      apply: () => {
+        nav.scrollLeft = left;
+      },
+    };
   };
-  const draw = () => {
+  const reveal = (key = active) => readReveal(key)?.apply();
+  const readDrawing = (scrollDelta = 0) => {
     const current = drag.current,
       ghost = ghostRef.current,
       nav = navRef.current,
       bounds = dragBoundary?.getBoundingClientRect(),
       floating = !!ghost && !!current?.detached,
       tab = (floating ? null : ghost) ?? tabElement(active),
-      frame = frameRef.current;
-    if (ghost && current?.moved && bounds) {
-      const sheet = surface(current.key);
-      const preview =
-        floating && sheet
-          ? content.lift(sheet, ghost, current.sheet)
-          : undefined;
-      const left = floating ? 8 : bounds.left + 8,
-        right = floating ? innerWidth - 8 : bounds.right - 8;
-      const x = Math.max(
-        left,
-        Math.min(current.x - current.offset, right - ghost.offsetWidth),
-      );
-      const y = floating
-        ? Math.max(
-            0,
-            Math.min(current.y - current.offsetY, innerHeight - height - 8),
-          )
-        : nav!.getBoundingClientRect().top;
-      ghost.style.left = `${x}px`;
-      ghost.style.top = `${y}px`;
-      if (preview) {
-        content.move(x - preview.offset, y + height - 1);
-        const left = preview.offset - 8,
-          right = preview.width - preview.offset - tabWidth - 8;
-        ghost
-          .querySelector("svg > path")!
-          .setAttribute("d", tabShape(left, right, size)[0]);
-        const outline =
-          ghost.querySelector<SVGPathElement>("[data-tab-outline]")!;
-        outline.style.visibility = "visible";
-        outline.setAttribute(
-          "d",
-          paneShape(left, right, height + preview.height - 1.5, true, size),
+      frame = frameRef.current,
+      sheet = surface(),
+      sheetBox = sheet?.getBoundingClientRect(),
+      navBox = nav?.getBoundingClientRect(),
+      origin = frame?.parentElement?.getBoundingClientRect();
+    let box =
+      tab && (tab !== ghost || !current?.moved)
+        ? tab.getBoundingClientRect()
+        : undefined;
+    if (box && tab !== ghost && scrollDelta)
+      box = new DOMRect(box.x - scrollDelta, box.y, box.width, box.height);
+    const lift =
+      ghost && current?.moved && floating
+        ? (() => {
+            const sheet = surface(current.key);
+            return sheet
+              ? content.prepareLift(sheet, ghost, current.sheet)
+              : undefined;
+          })()
+        : undefined;
+    const release =
+      ghost && current?.moved && !lift ? content.prepareRelease() : undefined;
+    return () => {
+      if (ghost && current?.moved && bounds) {
+        const preview = lift;
+        preview?.apply();
+        const left = floating ? 8 : bounds.left + 8,
+          right = floating ? innerWidth - 8 : bounds.right - 8;
+        const x = Math.max(
+          left,
+          Math.min(current.x - current.offset, right - tabWidth),
         );
-      } else content.release();
-    }
-    restoreFrame();
-    if (!tab || !bounds || !frame) {
-      if (frame) frame.style.visibility = "hidden";
-      return;
-    }
-    const box = tab.getBoundingClientRect();
-    const sheet = surface(),
-      sheetBox = sheet?.getBoundingClientRect();
-    const attached = Math.abs(box.top - bounds.top) < 0.5 && !!sheet;
-    const left = attached ? box.left - 8 - sheetBox!.left : 16,
-      right = attached ? sheetBox!.right - box.right - 8 : 16;
-    if (ghost && !floating) {
-      const [fill, outline] = tabShape(
-        Math.max(0, left),
-        Math.max(0, right),
-        size,
-      );
-      ghost.querySelector("svg > path")!.setAttribute("d", fill);
-      ghost.querySelector("[data-tab-outline]")!.setAttribute("d", outline);
-    }
-    const stroke = tab.querySelector<SVGPathElement>("[data-tab-outline]")!;
-    stroke.style.visibility = attached ? "hidden" : "visible";
-    maskedOutline.current = stroke;
-    frame.style.visibility = attached ? "visible" : "hidden";
-    if (!attached) return;
-    sheet!.style.borderColor = "transparent";
-    maskedSheet.current = sheet;
-    const x = box.left - 8,
-      bottom = sheetBox!.bottom - box.top - 0.5;
-    const origin = frame.parentElement!.getBoundingClientRect();
-    frame.style.left = `${x - origin.left}px`;
-    frame.style.top = `${box.top - origin.top}px`;
-    const viewport =
-        ghost && !floating ? sheetBox! : nav!.getBoundingClientRect(),
-      clipLeft = Math.max(-left, viewport.left - x),
-      clipRight = Math.min(width + right, viewport.right - x);
-    frame.style.clipPath = `polygon(${clipLeft}px 0px, ${clipRight}px 0px, ${clipRight}px ${height - 1}px, ${width + right}px ${height - 1}px, ${width + right}px ${bottom + 1}px, ${-left}px ${bottom + 1}px, ${-left}px ${height - 1}px, ${clipLeft}px ${height - 1}px)`;
-    frame
-      .querySelector("path")!
-      .setAttribute(
-        "d",
+        const y = floating
+          ? Math.max(
+              0,
+              Math.min(current.y - current.offsetY, innerHeight - height - 8),
+            )
+          : navBox!.top;
+        if (tab === ghost) box = new DOMRect(x, y, tabWidth, height);
+        ghost.style.translate = `${x}px ${y}px`;
+        if (preview) {
+          content.move(x - preview.offset, y + height - 1);
+          const left = preview.offset - 8,
+            right = preview.width - preview.offset - tabWidth - 8;
+          pathData(
+            ghost.querySelector("svg > path")!,
+            tabShape(left, right, size)[0],
+          );
+          const outline =
+            ghost.querySelector<SVGPathElement>("[data-tab-outline]")!;
+          outline.style.visibility = "visible";
+          pathData(
+            outline,
+            paneShape(left, right, height + preview.height - 1.5, true, size),
+          );
+        } else release?.();
+      }
+      if (!tab || !box || !bounds || !frame) {
+        restoreFrame();
+        if (frame) frame.style.visibility = "hidden";
+        return;
+      }
+      const attached = Math.abs(box.top - bounds.top) < 0.5 && !!sheet;
+      const left = attached ? box.left - 8 - sheetBox!.left : 16,
+        right = attached ? sheetBox!.right - box.right - 8 : 16;
+      if (ghost && !floating) {
+        const [fill, outline] = tabShape(
+          Math.max(0, left),
+          Math.max(0, right),
+          size,
+        );
+        pathData(ghost.querySelector("svg > path")!, fill);
+        pathData(ghost.querySelector("[data-tab-outline]")!, outline);
+      }
+      const stroke = tab.querySelector<SVGPathElement>("[data-tab-outline]")!;
+      if (maskedOutline.current !== stroke)
+        maskedOutline.current?.style.removeProperty("visibility");
+      stroke.style.visibility = attached ? "hidden" : "visible";
+      maskedOutline.current = stroke;
+      frame.style.visibility = attached ? "visible" : "hidden";
+      if (maskedSheet.current !== (attached ? sheet : null))
+        maskedSheet.current?.style.removeProperty("border-color");
+      maskedSheet.current = attached ? sheet : null;
+      if (!attached) return;
+      sheet!.style.borderColor = "transparent";
+      maskedSheet.current = sheet;
+      const x = box.left - 8,
+        bottom = sheetBox!.bottom - box.top - 0.5;
+      frame.style.left = `${x - origin!.left}px`;
+      frame.style.top = `${box.top - origin!.top}px`;
+      const viewport = ghost && !floating ? sheetBox! : navBox!,
+        clipLeft = Math.max(-left, viewport.left - x),
+        clipRight = Math.min(width + right, viewport.right - x);
+      frame.style.clipPath = `polygon(${clipLeft}px 0px, ${clipRight}px 0px, ${clipRight}px ${height - 1}px, ${width + right}px ${height - 1}px, ${width + right}px ${bottom + 1}px, ${-left}px ${bottom + 1}px, ${-left}px ${height - 1}px, ${clipLeft}px ${height - 1}px)`;
+      pathData(
+        frame.querySelector("path")!,
         paneShape(left, right, bottom, !!ghost && !floating, size) +
           ((!ghost || floating) && clipLeft > 0
             ? ` M0 ${height - 0.5} H${Math.min(width, clipLeft)}`
@@ -219,16 +255,23 @@ export function WorkspaceTabs({
             ? ` M${Math.max(0, clipRight)} ${height - 0.5} H${width}`
             : ""),
       );
+    };
   };
   const animate = (element: HTMLElement, from: number) => {
-    const transform = getComputedStyle(element).transform;
-    if (transform !== "none") from += new DOMMatrixReadOnly(transform).m41;
-    element.getAnimations().forEach((animation) => animation.cancel());
-    if (!matchMedia("(prefers-reduced-motion: reduce)").matches)
-      element.animate(
+    animations.current.get(element)?.cancel();
+    if (!matchMedia("(prefers-reduced-motion: reduce)").matches) {
+      const animation = element.animate(
         [{ transform: `translateX(${from}px)` }, { transform: "none" }],
         motion,
       );
+      animations.current.set(element, animation);
+      const remove = () => {
+        if (animations.current.get(element) === animation)
+          animations.current.delete(element);
+      };
+      animation.onfinish = remove;
+      animation.oncancel = remove;
+    }
   };
   const settle = (key: string) =>
     requestAnimationFrame(() => {
@@ -259,26 +302,35 @@ export function WorkspaceTabs({
       latest.current.refresh();
     });
   const finish = (cancel = false) => {
+    if (cancel) pointer.current!.cancel();
+    else pointer.current!.flush();
     const current = drag.current;
     if (!current) return;
     drag.current = undefined;
+    pointer.current!.cancel();
     suppressClick.current = current.moved;
     content.release();
     if (cancel) {
       docking.cancel();
-      if (current.moved) onReorder(current.order);
       announce("");
     }
-    if (current.moved && (cancel || !docking.drop())) settle(current.key);
+    const dropped = !cancel && current.moved && docking.drop();
+    if (!cancel && !dropped && current.previewOrder)
+      onReorder(current.previewOrder);
+    setDraftOrder(undefined);
+    if (current.moved && !dropped) settle(current.key);
     else setDragging(undefined);
   };
-  const move = (from: string, to: string) => {
+  const move = (from: string, to: string, preview = false) => {
     const order = links.map(([key]) => key),
       index = order.indexOf(to);
     if (from === to || index < 0) return;
     order.splice(order.indexOf(from), 1);
     order.splice(index, 0, from);
-    onReorder(order);
+    if (preview && drag.current) {
+      drag.current.previewOrder = order;
+      setDraftOrder(order);
+    } else onReorder(order);
     announce(`${labels.get(from)}: position ${index + 1} of ${order.length}`);
   };
   const split = (key: string, edge: "left" | "right" | "bottom") => {
@@ -319,7 +371,7 @@ export function WorkspaceTabs({
     }
     event.preventDefault();
   };
-  const measure = () => {
+  const readMetrics = () => {
     const nav = navRef.current,
       strip = stripRef.current;
     if (!nav || !strip || !dragBoundary) return;
@@ -335,73 +387,134 @@ export function WorkspaceTabs({
     );
     const inserting = docking.insertion === undefined ? 0 : 1;
     const count = items.length - (drag.current?.detached ? 1 : 0) + inserting;
+    const fittedWidth = fitTabWidth(
+      density.width,
+      availableWidth,
+      items.length + inserting,
+    );
     const next = {
-      available: availableWidth,
-      overflow:
-        count *
-          fitTabWidth(density.width, availableWidth, items.length + inserting) +
-          16 >
-        availableWidth + 1,
+      width: fittedWidth,
+      overflow: count * fittedWidth + 16 > availableWidth + 1,
       left: nav.scrollLeft > 1,
       right: nav.scrollLeft + nav.clientWidth < nav.scrollWidth - 1,
     };
     const current = measured.current;
-    if (
-      next.available !== current.available ||
-      next.overflow !== current.overflow ||
-      next.left !== current.left ||
-      next.right !== current.right
-    ) {
-      measured.current = next;
-      setMetrics(next);
-    }
+    return () => {
+      if (
+        next.width !== current.width ||
+        next.overflow !== current.overflow ||
+        next.left !== current.left ||
+        next.right !== current.right
+      ) {
+        measured.current = next;
+        setMetrics(next);
+      }
+    };
   };
-  const follow = () => {
-    const nav = navRef.current;
-    if (
-      [surface(), nav, ghostRef.current].some((element) =>
-        element
-          ?.getAnimations({ subtree: element === nav })
-          .some((animation) => animation.playState === "running"),
+  const runningAnimations = () => {
+    // Track motion directly to avoid getAnimations() forcing style resolution.
+    for (const target of transitions.current.keys())
+      if (target instanceof Node && !target.isConnected)
+        transitions.current.delete(target);
+    return (
+      transitions.current.size > 0 ||
+      settling.current?.playState === "running" ||
+      [...animations.current.values()].some(
+        (animation) => animation.playState === "running",
       )
-    )
-      frame.current = requestAnimationFrame(() => latest.current.refresh());
+    );
   };
-  const refresh = (resized = false) => {
-    cancelAnimationFrame(frame.current);
-    measure();
-    if (resized) reveal();
-    draw();
-    follow();
+  const readFrame = (resized = false) => {
+    const metrics = readMetrics();
+    const scroll = resized ? readReveal() : undefined;
+    const follow = runningAnimations();
+    const draw = readDrawing(scroll?.delta);
+    return () => {
+      metrics?.();
+      scroll?.apply();
+      draw();
+      if (follow) geometry.schedule();
+    };
   };
-  const latest = React.useRef({ refresh, finish });
+  const refresh = (resized = false) => geometry.commit(resized);
+  const movePointer = () => {
+    const current = drag.current,
+      nav = navRef.current;
+    if (!current?.moved || !nav) return;
+    current.detached = docking.move(current);
+    if (!current.detached) {
+      const { left, right } = nav.getBoundingClientRect();
+      const scroll =
+        current.x < left + 24 ? -16 : current.x > right - 24 ? 16 : 0;
+      const before = nav.scrollLeft;
+      if (scroll) nav.scrollLeft += scroll;
+      const index = Math.max(
+        0,
+        Math.min(
+          items.length - 1,
+          Math.floor(
+            (Math.max(left + 8, Math.min(current.x, right - 8)) -
+              left +
+              nav.scrollLeft -
+              8) /
+              tabWidth,
+          ),
+        ),
+      );
+      move(current.key, items[index]!.key, true);
+      // Keep scrolling at the edge, independently of pointer event frequency.
+      if (scroll && before !== nav.scrollLeft)
+        pointer.current!.schedule(undefined);
+    }
+    geometry.flush();
+  };
+  const latest = React.useRef({ refresh, finish, movePointer, readFrame });
+  const [geometry] = React.useState(() =>
+    geometryTask((resized) => latest.current.readFrame(resized)),
+  );
+  const pointer = React.useRef<ReturnType<typeof frameTask<void>> | undefined>(
+    undefined,
+  );
+  if (!pointer.current)
+    pointer.current = frameTask(() => latest.current.movePointer());
   const detached = !!dragging && !!drag.current?.detached;
   React.useLayoutEffect(() => {
-    latest.current = { refresh, finish };
+    latest.current = { refresh, finish, movePointer, readFrame };
+  });
+  React.useLayoutEffect(() => {
     const order = JSON.stringify([tabOrder, docking.insertion]);
     const previous = positions.current;
     positions.current = { order, tabs: new Map() };
-    for (const element of navRef.current!
-      .children as HTMLCollectionOf<HTMLElement>) {
-      const key = element.querySelector("a")?.dataset.tab;
-      if (!key) continue;
+    // Read all slots before animation writes can invalidate layout.
+    const slots = items.map(({ key }) => {
+      const element = tabElement(key)!;
       const left = element.offsetLeft,
         from = previous.tabs.get(key);
-      if (
+      const displaced =
         previous.order !== order &&
         key !== dragging &&
         from !== undefined &&
-        from !== left
-      )
-        animate(element, from - left);
+        from !== left;
+      const transform = displaced
+        ? getComputedStyle(element).transform
+        : "none";
+      const offset =
+        transform === "none" ? 0 : new DOMMatrixReadOnly(transform).m41;
+      return {
+        key,
+        element,
+        left,
+        delta: displaced ? from - left + offset : 0,
+      };
+    });
+    for (const { key, element, left, delta } of slots) {
+      if (delta) animate(element, delta);
       positions.current.tabs.set(key, left);
     }
-    cancelAnimationFrame(frame.current);
-    draw();
-    follow();
-  });
+    // oxlint-disable-next-line react-hooks/exhaustive-deps -- these are the inputs that change slot positions
+  }, [tabOrder, docking.insertion, tabWidth, dragging, detached]);
   React.useLayoutEffect(
-    () => refresh(),
+    () => refresh(true),
     // oxlint-disable-next-line react-hooks/exhaustive-deps -- the inputs refresh measures
     [
       dragBoundary,
@@ -409,18 +522,52 @@ export function WorkspaceTabs({
       tabOrder,
       docking.insertion,
       tabWidth,
+      density.width,
       height,
       metrics.overflow,
       dragging,
       detached,
     ],
   );
-  // oxlint-disable-next-line react-hooks/exhaustive-deps -- only when the active tab or order changes
-  React.useLayoutEffect(() => reveal(), [active, tabOrder, docking.insertion]);
   React.useLayoutEffect(() => {
     const nav = navRef.current!;
-    const resize = () => latest.current.refresh(true),
-      scroll = () => latest.current.refresh(),
+    const board = dragBoundary?.closest(".lab-board");
+    const trackedTransitions = transitions.current;
+    const transition = (event: Event) => {
+      const target = event.target!;
+      const name = (event as TransitionEvent).propertyName;
+      // Ignore transitions that do not affect geometry.
+      if (
+        [
+          "color",
+          "background-color",
+          "fill",
+          "stroke",
+          "opacity",
+          "filter",
+          "box-shadow",
+        ].includes(name)
+      )
+        return;
+      if (event.type === "transitionrun") {
+        if (
+          target !== surface() &&
+          !(target instanceof Node && dragBoundary?.contains(target))
+        )
+          return;
+        const properties = transitions.current.get(target) ?? new Set<string>();
+        properties.add(name);
+        transitions.current.set(target, properties);
+        geometry.schedule();
+      } else {
+        const properties = transitions.current.get(target);
+        properties?.delete(name);
+        if (!properties?.size) transitions.current.delete(target);
+      }
+    };
+    for (const name of ["transitionrun", "transitionend", "transitioncancel"])
+      board?.addEventListener(name, transition);
+    const scroll = () => latest.current.refresh(),
       blur = () => latest.current.finish(true);
     const wheel = (event: WheelEvent) => {
       if (
@@ -438,28 +585,39 @@ export function WorkspaceTabs({
             ? nav.clientWidth
             : 1);
     };
-    const observer = new ResizeObserver(resize);
-    for (const element of [
-      nav,
-      stripRef.current,
-      dragBoundary,
-      ...(dragBoundary?.children ?? []),
-      surface(),
-    ])
-      if (element) observer.observe(element);
+    const unobserve = geometry.observe(
+      [
+        nav,
+        stripRef.current,
+        dragBoundary,
+        ...(dragBoundary?.children ?? []),
+        surface(),
+      ].filter((element): element is Element => !!element),
+    );
     addEventListener("scroll", scroll, true);
     addEventListener("blur", blur);
     nav.addEventListener("wheel", wheel, { passive: false });
     return () => {
-      observer.disconnect();
+      for (const name of ["transitionrun", "transitionend", "transitioncancel"])
+        board?.removeEventListener(name, transition);
+      trackedTransitions.clear();
+      unobserve();
       removeEventListener("scroll", scroll, true);
       removeEventListener("blur", blur);
       nav.removeEventListener("wheel", wheel);
-      cancelAnimationFrame(frame.current);
+      geometry.cancel();
       restoreFrame();
     };
     // oxlint-disable-next-line react-hooks/exhaustive-deps -- reruns when the active tab changes
   }, [active, dragBoundary]);
+  React.useEffect(
+    () => () => {
+      pointer.current!.cancel();
+      settling.current?.cancel();
+      for (const animation of animations.current.values()) animation.cancel();
+    },
+    [],
+  );
   const scrollButton = (direction: -1 | 1) =>
     metrics.overflow && (
       <button
@@ -499,6 +657,8 @@ export function WorkspaceTabs({
         onKeyDownCapture={() => setPointerFocus(false)}
         onBlurCapture={() => setPointerFocus(false)}
         onPointerDownCapture={() => {
+          pointer.current!.cancel();
+          setDraftOrder(undefined);
           content.release(false);
           settling.current?.cancel();
           setDragging(undefined);
@@ -524,74 +684,60 @@ export function WorkspaceTabs({
           )
             return;
           if (!current.moved && active !== current.key) onSelect(current.key);
+          if (!current.moved) setDragging(current.key);
           current.moved = true;
           if (!nav.hasPointerCapture(event.pointerId))
             nav.setPointerCapture(event.pointerId);
-          setDragging(current.key);
           event.preventDefault();
           current.x = x;
           current.y = event.clientY;
-          current.detached = docking.move(current);
-          if (!current.detached) {
-            const { left, right } = nav.getBoundingClientRect();
-            nav.scrollLeft += x < left + 24 ? -16 : x > right - 24 ? 16 : 0;
-            const index = Math.max(
-              0,
-              Math.min(
-                items.length - 1,
-                Math.floor(
-                  (Math.max(left + 8, Math.min(x, right - 8)) -
-                    left +
-                    nav.scrollLeft -
-                    8) /
-                    tabWidth,
-                ),
-              ),
-            );
-            move(current.key, items[index]!.key);
-          }
-          refresh();
+          pointer.current!.schedule(undefined);
         }}
         onPointerUp={() => finish()}
         onPointerCancel={() => finish(true)}
+        onLostPointerCapture={(event) => {
+          if (event.target === event.currentTarget) finish(true);
+        }}
         className="lab-tablist"
       >
         {links.map(([key, text], index) => {
-          const actions: WorkspaceAction[] = [
-            ...(onDuplicate
-              ? [
-                  {
-                    label: "Duplicate tab",
-                    onSelect: () => {
-                      menuFocus.current = onDuplicate(key);
-                    },
-                  },
-                ]
-              : []),
-            {
-              label: "Move left",
-              onSelect: () => move(key, items[index - 1]!.key),
-              disabled: !index,
-            },
-            {
-              label: "Move right",
-              onSelect: () => move(key, items[index + 1]!.key),
-              disabled: index === items.length - 1,
-            },
-            {
-              label: "Move to next pane",
-              onSelect: () => docking.next(key),
-              disabled: docking.paneCount < 2,
-            },
-            null,
-            ...(["left", "right", "bottom"] as const).map((edge) => ({
-              label: `Split ${edge === "bottom" ? "below" : edge}`,
-              onSelect: () => split(key, edge),
-              disabled: items.length < 2,
-            })),
-            null,
-            { label: "Close tab", onSelect: () => onClose(key) },
-          ];
+          const actions: WorkspaceAction[] = menu
+            ? [
+                ...(onDuplicate
+                  ? [
+                      {
+                        label: "Duplicate tab",
+                        onSelect: () => {
+                          menuFocus.current = onDuplicate(key);
+                        },
+                      },
+                    ]
+                  : []),
+                {
+                  label: "Move left",
+                  onSelect: () => move(key, items[index - 1]!.key),
+                  disabled: !index,
+                },
+                {
+                  label: "Move right",
+                  onSelect: () => move(key, items[index + 1]!.key),
+                  disabled: index === items.length - 1,
+                },
+                {
+                  label: "Move to next pane",
+                  onSelect: () => docking.next(key),
+                  disabled: docking.paneCount < 2,
+                },
+                null,
+                ...(["left", "right", "bottom"] as const).map((edge) => ({
+                  label: `Split ${edge === "bottom" ? "below" : edge}`,
+                  onSelect: () => split(key, edge),
+                  disabled: items.length < 2,
+                })),
+                null,
+                { label: "Close tab", onSelect: () => onClose(key) },
+              ]
+            : [];
           const target = (
             <div
               role="presentation"
@@ -649,7 +795,6 @@ export function WorkspaceTabs({
                     y: event.clientY,
                     detached: false,
                     moved: false,
-                    order: links.map(([path]) => path),
                   };
                 }}
                 className="lab-tab-link"
