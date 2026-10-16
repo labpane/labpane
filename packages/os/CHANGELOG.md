@@ -1,5 +1,11 @@
 # @labpane/os
 
+## 1.4.0
+
+### Minor Changes
+
+- 72fe7c4: Add an optional `@labpane/os/pwa` entry point for installed PWA window-controls overlays, preserving native caption controls and full-width panes. Keep pane outlines outside clipped toolbars so their borders remain continuous.
+
 ## 1.3.0
 
 ### Minor Changes
