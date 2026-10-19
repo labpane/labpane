@@ -65,6 +65,13 @@ const tries = [
   "Close a tab, then open another with the + button",
   "Open the logo menu to switch the theme or the size",
 ];
+const touchTries = [
+  "Tap a tab to open it; swipe the tab bar to see more",
+  "Use the down arrow to choose from all open tabs",
+  "Touch and hold a tab for its actions, including moving and splitting",
+  "Close a tab with its ×, then open another with the + button",
+  "Open the logo menu to switch the theme or the size",
+];
 
 export function WelcomePage() {
   return (
@@ -74,8 +81,15 @@ export function WelcomePage() {
         page built with <code>@labpane/ui</code>.
       </p>
       <h4 className="demo-subheading">Things to try</h4>
-      <ul className="demo-list">
+      <ul className="demo-list pointer-help">
         {tries.map((text) => (
+          <li key={text}>
+            <Check label={text} />
+          </li>
+        ))}
+      </ul>
+      <ul className="demo-list touch-help">
+        {touchTries.map((text) => (
           <li key={text}>
             <Check label={text} />
           </li>

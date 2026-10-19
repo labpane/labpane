@@ -15,6 +15,8 @@ import {
   TabsList,
   TabsTrigger,
   TextField,
+  Topbar,
+  TopbarActions,
   column,
 } from "@labpane/ui";
 
@@ -33,6 +35,13 @@ export function AdminPage() {
       <button type="button" className="p-4">
         Host button
       </button>
+      <Topbar aria-label="Activity toolbar">
+        <span>Activity</span>
+        <TopbarActions>
+          <Button>Invite member</Button>
+          <Button>Export report</Button>
+        </TopbarActions>
+      </Topbar>
       <Page
         title="Admin"
         actions={

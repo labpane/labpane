@@ -8,7 +8,12 @@ import {
 } from "./context.js";
 import * as React from "react";
 import { createPortal } from "react-dom";
-import { XIcon, ChevronLeftIcon, ChevronRightIcon } from "./icons.js";
+import {
+  XIcon,
+  ChevronLeftIcon,
+  ChevronRightIcon,
+  ChevronDownIcon,
+} from "./icons.js";
 import type { Docking } from "./surface.js";
 import { TabSurface, paneShape, tabShape } from "./frame.js";
 import type { WorkspaceTab } from "./workspace.js";
@@ -787,6 +792,9 @@ export function WorkspaceTabs({
                 onKeyDown={(event) => keyDown(event, key, index)}
                 onPointerDown={(event) => {
                   if (event.button !== 0 || !event.isPrimary) return;
+                  // Let a finger scroll the strip (or the page). A tap selects
+                  // through onClick; starting a swipe must not select or dock.
+                  if (event.pointerType === "touch") return;
                   if (event.pointerType === "mouse") event.preventDefault();
                   event.currentTarget.setPointerCapture(event.pointerId);
                   event.currentTarget.focus({ preventScroll: true });
@@ -841,6 +849,24 @@ export function WorkspaceTabs({
         )}
       </div>
       {scrollButton(1)}
+      {metrics.overflow && (
+        <label className="lab-tab-picker" title="Switch tab">
+          <ChevronDownIcon className="lab-icon" />
+          <select
+            aria-label="Switch tab"
+            value={active}
+            onChange={(event) => {
+              onSelect(event.currentTarget.value);
+            }}
+          >
+            {links.map(([key, label]) => (
+              <option key={key} value={key}>
+                {label}
+              </option>
+            ))}
+          </select>
+        </label>
+      )}
       <span className="lab-sr-only" aria-live="polite">
         {announcement}
       </span>

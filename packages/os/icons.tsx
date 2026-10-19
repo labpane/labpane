@@ -24,4 +24,5 @@ const icon = (strokeWidth: number, ...paths: string[]) =>
 
 export const ChevronLeftIcon = icon(4 / 3, "M10 4 6 8l4 4");
 export const ChevronRightIcon = icon(4 / 3, "m6 4 4 4-4 4");
+export const ChevronDownIcon = icon(4 / 3, "m4 6 4 4 4-4");
 export const XIcon = icon(7 / 6, "m12 4-8 8", "m4 4 8 8");

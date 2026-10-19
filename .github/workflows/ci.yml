@@ -79,9 +79,9 @@ jobs:
       - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
       - run: bun install --frozen-lockfile
       - run: bun run build
-      - name: Install Chromium
+      - name: Install Chromium and WebKit
         working-directory: example
-        run: bunx playwright install --with-deps chromium
+        run: bunx playwright install --with-deps chromium webkit
       - name: Build and test the site
         working-directory: example
         run: bun run test
