@@ -1,5 +1,11 @@
 # @labpane/ui
 
+## 1.4.1
+
+### Patch Changes
+
+- 1b02229: Let touch gestures scroll workspace tabs without accidentally selecting, reordering, or docking them. Add a native picker for overflowing tabs on touch devices and enlarge their close targets. Allow Topbar and TopbarActions to wrap within narrow panes instead of clipping actions.
+
 ## 1.4.0
 
 No changes in this release.
