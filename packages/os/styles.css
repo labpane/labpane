@@ -386,7 +386,7 @@
   border-top-left-radius: 0.75rem;
   border-top-right-radius: 0.75rem;
   outline-style: none;
-  touch-action: none;
+  touch-action: auto;
   color: var(--lab-muted-foreground);
 }
 
@@ -444,6 +444,46 @@
 .lab-tab-close-icon {
   width: 0.875rem;
   height: 0.875rem;
+}
+
+.lab-tab-picker {
+  display: none;
+}
+
+@media (pointer: coarse) {
+  .lab-scroll {
+    display: none;
+  }
+
+  .lab-tab-picker {
+    position: relative;
+    display: grid;
+    flex-shrink: 0;
+    place-items: center;
+    width: 2.75rem;
+    height: min(2.75rem, var(--lab-tab-height));
+    border-radius: 0.625rem;
+  }
+
+  .lab-tab-picker select {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    opacity: 0;
+    font-size: 1rem;
+  }
+
+  .lab-tab-picker:has(select:focus-visible) {
+    outline: 2px solid var(--lab-ring);
+    outline-offset: -2px;
+  }
+
+  .lab-tab-close {
+    width: 2rem;
+    height: min(2rem, var(--lab-tab-content-height));
+    right: 0.5rem;
+  }
 }
 
 @media (hover: hover) {

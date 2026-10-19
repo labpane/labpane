@@ -1,5 +1,46 @@
 import { expect, test } from "./fixtures";
 
+test.describe("touch tabs", () => {
+  test.use({
+    viewport: { width: 402, height: 874 },
+    isMobile: true,
+    hasTouch: true,
+  });
+
+  for (const mode of ["os", "app"]) {
+    test(`${mode} exposes every overflowing tab and preserves its contents`, async ({
+      page,
+    }) => {
+      await page.goto(
+        `?page=${mode}&tabs=12&density=${mode === "os" ? 80 : 100}`,
+      );
+      const picker = page.getByRole("combobox", { name: "Switch tab" });
+      await expect(picker).toBeVisible();
+      const header = (await page.locator(".lab-pane-header").boundingBox())!;
+      const control = (await picker.boundingBox())!;
+      expect(control.y).toBeGreaterThanOrEqual(header.y);
+      expect(control.y + control.height).toBeLessThanOrEqual(
+        header.y + header.height,
+      );
+      await expect(picker.locator("option")).toHaveCount(12);
+      await expect(
+        page.getByRole("button", { name: "Scroll tabs right" }),
+      ).toBeHidden();
+      await picker.selectOption("notes-1");
+      const notes = page.getByRole("textbox", { name: "Notes", exact: true });
+      await notes.fill("Keep this draft");
+      await picker.selectOption("settings-11");
+      await expect(
+        page.getByRole("tab", { name: "Settings 11", exact: true }),
+      ).toHaveAttribute("aria-selected", "true");
+      await picker.selectOption("notes-1");
+      await expect(notes).toHaveValue("Keep this draft");
+      await page.getByRole("tab", { name: "Overview 0", exact: true }).tap();
+      await expect(picker).toHaveValue("overview-0");
+    });
+  }
+});
+
 test("os alone loads no Radix or ui styles and asks the browser before closing unsaved work", async ({
   page,
 }, info) => {

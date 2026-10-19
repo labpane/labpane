@@ -327,7 +327,9 @@ export function Commands() {
       <div className="specimen-grid specimen-grid-wide">
         <Specimen label="Command, inline" stack>
           <div className="command-frame">
-            <Command>
+            {/* No initial selection: cmdk scrolls the selected item into view,
+                which would pull the whole document down to this example. */}
+            <Command defaultValue="__unselected__">
               <CommandInput
                 aria-label="Search pages and actions"
                 placeholder="Search pages and actions"

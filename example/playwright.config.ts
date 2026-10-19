@@ -1,4 +1,4 @@
-import { defineConfig } from "@playwright/test";
+import { defineConfig, devices } from "@playwright/test";
 
 const port = 4174;
 
@@ -16,8 +16,26 @@ export default defineConfig({
     trace: "retain-on-failure",
   },
   projects: [
-    { name: "desktop", use: { viewport: { width: 1440, height: 900 } } },
-    { name: "phone", use: { viewport: { width: 375, height: 812 } } },
+    {
+      name: "desktop",
+      testIgnore: "mobile.spec.ts",
+      use: { viewport: { width: 1440, height: 900 } },
+    },
+    {
+      name: "phone",
+      testIgnore: "mobile.spec.ts",
+      use: { viewport: { width: 375, height: 812 } },
+    },
+    {
+      name: "iphone",
+      testMatch: "mobile.spec.ts",
+      use: { ...devices["iPhone 16 Pro"], browserName: "webkit" },
+    },
+    {
+      name: "android",
+      testMatch: "mobile.spec.ts",
+      use: { ...devices["Pixel 5"], browserName: "chromium" },
+    },
   ],
   webServer: {
     command: `bun run build && bunx vite preview --port ${port} --strictPort --host 127.0.0.1`,

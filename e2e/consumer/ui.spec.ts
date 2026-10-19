@@ -1,5 +1,26 @@
 import { expect, test } from "./fixtures";
 
+test("topbar actions wrap inside narrow content", async ({ page }) => {
+  for (const width of [402, 320]) {
+    await page.setViewportSize({ width, height: 874 });
+    const toolbar = page.locator(
+      '[data-slot="topbar"][aria-label="Activity toolbar"]',
+    );
+    const box = (await toolbar.boundingBox())!;
+    expect(
+      await toolbar.evaluate((node) => node.scrollWidth - node.clientWidth),
+    ).toBeLessThanOrEqual(1);
+    for (const button of await toolbar.getByRole("button").all()) {
+      const control = (await button.boundingBox())!;
+      expect(control.x).toBeGreaterThanOrEqual(box.x);
+      expect(control.x + control.width).toBeLessThanOrEqual(box.x + box.width);
+      expect(control.y + control.height).toBeLessThanOrEqual(
+        box.y + box.height,
+      );
+    }
+  }
+});
+
 test.beforeEach(async ({ page }) => {
   await page.goto("?page=ui");
   await expect(page.getByRole("heading", { name: "Admin" })).toBeVisible();

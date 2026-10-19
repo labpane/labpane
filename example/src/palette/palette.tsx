@@ -1239,21 +1239,36 @@ function AppMenus() {
 function useCurrentSection() {
   const [current, setCurrent] = useState<string>(sections[0][0]);
   useEffect(() => {
-    const visible = new Map<string, boolean>();
-    const observer = new IntersectionObserver(
-      (entries) => {
-        for (const entry of entries)
-          visible.set(entry.target.id, entry.isIntersecting);
-        const first = sections.find(([id]) => visible.get(id));
-        if (first) setCurrent(first[0]);
-      },
-      { rootMargin: "-56px 0px -60% 0px" },
-    );
-    for (const [id] of sections) {
-      const element = document.getElementById(id);
-      if (element) observer.observe(element);
-    }
-    return () => observer.disconnect();
+    let observer: IntersectionObserver;
+    const observe = () => {
+      observer?.disconnect();
+      const visible = new Map<string, boolean>();
+      // Match anchor positioning below the sticky navigation. The extra pixel
+      // excludes the preceding section when its bottom meets the anchor.
+      const top = parseFloat(
+        getComputedStyle(document.documentElement).scrollPaddingTop,
+      );
+      observer = new IntersectionObserver(
+        (entries) => {
+          for (const entry of entries)
+            visible.set(entry.target.id, entry.isIntersecting);
+          const first = sections.find(([id]) => visible.get(id));
+          if (first) setCurrent(first[0]);
+        },
+        { rootMargin: `-${top + 1}px 0px -60% 0px` },
+      );
+      for (const [id] of sections) {
+        const element = document.getElementById(id);
+        if (element) observer.observe(element);
+      }
+    };
+    const desktop = matchMedia("(min-width: 64rem)");
+    observe();
+    desktop.addEventListener("change", observe);
+    return () => {
+      observer.disconnect();
+      desktop.removeEventListener("change", observe);
+    };
   }, []);
   return current;
 }
@@ -1266,6 +1281,24 @@ export function Palette() {
         Skip to content
       </a>
       <SiteHeader page="palette" />
+      <nav className="palette-jump" aria-label="Jump to a section">
+        <div className="container palette-jump-row">
+          <label htmlFor="palette-section">Sections</label>
+          <select
+            id="palette-section"
+            value={current}
+            onChange={(event) => {
+              window.location.hash = event.currentTarget.value;
+            }}
+          >
+            {sections.map(([id, title]) => (
+              <option key={id} value={id}>
+                {title}
+              </option>
+            ))}
+          </select>
+        </div>
+      </nav>
       <div className="container palette-layout">
         <nav className="palette-toc" aria-label="Sections">
           <p className="palette-toc-title">On this page</p>
@@ -1291,18 +1324,6 @@ export function Palette() {
               between light and dark at the top, or try a sample theme here.
             </p>
             <ThemeSwitcher />
-            <details className="palette-jump">
-              <summary>Jump to a section</summary>
-              <nav aria-label="Sections">
-                <ul>
-                  {sections.map(([id, title]) => (
-                    <li key={id}>
-                      <a href={`#${id}`}>{title}</a>
-                    </li>
-                  ))}
-                </ul>
-              </nav>
-            </details>
           </header>
 
           <Section

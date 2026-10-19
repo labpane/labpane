@@ -381,7 +381,8 @@ export function SidePanels() {
         <>
           <code>SidePanel</code> is a resizable aside. Drag its edge, or focus
           the edge and press the arrow keys; dragging it well past its minimum
-          closes it, and the caller keeps the state.
+          closes it, and the caller keeps the state. This example stacks the
+          details below the controls on a phone.
         </>
       }
     >
@@ -396,7 +397,14 @@ export function SidePanels() {
               {open ? "Close details" : "Open details"}
             </Button>
             <p className="muted" role="status">
-              {open ? `Panel ${width}px wide` : "Panel closed"}
+              {open ? (
+                <>
+                  Details open
+                  <span className="panel-width"> · {width}px wide</span>
+                </>
+              ) : (
+                "Panel closed"
+              )}
             </p>
           </div>
           <SidePanel

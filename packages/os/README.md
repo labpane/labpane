@@ -183,6 +183,10 @@ The host interface has no Wails, Go, Tauri, or Electron dependency. Applications
 
 ## Keyboard
 
+On touch devices, swipe the tab bar to scroll it and tap a tab to select it. An overflowing bar also has a native tab picker at its end. Swiping does not reorder or split tabs. If you supply a `menu`, touch and hold a tab to use its move and split actions. Mouse dragging and keyboard actions remain available.
+
+Workspace panels scroll their content independently. Make page headers and action rows wrap, use `min-width: 0` for flex children, and keep wide tables or code blocks in their own scroll containers. A fixed `min-width` on application content can still make a panel scroll sideways even when the document fits the screen.
+
 - Left and Right move between tabs, Home and End jump to the first and last, and Space selects
 - Alt+Left and Alt+Right move the focused tab
 - Alt+Shift+Left, Right, or Down split the focused tab into a new pane on that side
