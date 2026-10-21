@@ -92,11 +92,10 @@ export function useTabLinks() {
   );
 }
 
-export type WorkspaceAction = {
-  label: string;
-  onSelect: () => void;
-  disabled?: boolean;
-} | null;
+export type WorkspaceAction =
+  | { label: string; onSelect: () => void; disabled?: boolean }
+  | { label: string; items: WorkspaceAction[] }
+  | null;
 // WorkspaceMenu wraps a tab or divider in the app's menu; tab is the key of the tab it opens on
 export type WorkspaceMenu = (
   target: ReactElement,

@@ -67,6 +67,8 @@ Each tab is a `WorkspaceTab`:
 
 Tabs whose content has unsaved changes call `useUnsavedChanges(true)`. Closing one asks first: through `confirmClose` if you pass it, and the browser's `confirm` otherwise. The page also warns before unloading.
 
+The tab menu's **Close** submenu can close tabs to the left or right, other tabs in the same pane, all other tabs, or all tabs and panes. Left and right follow the order within the clicked tab's pane. Each unsaved tab asks separately; keeping one leaves it open while the other selected tabs close. Empty panes disappear.
+
 ## Inside a tab
 
 Background tabs stay mounted, so a tab's content asks where it stands: `useTabActive()` is true for the tab in front of the focused pane and `useTabVisible()` for every tab on screen, including split panes (`useTabVisibleRef()` for listeners, `useShownOnce(visible)` to mount once). Gate polling, intervals, window listeners, and portaled overlays on them; redraw charts and canvases from a `ResizeObserver` on their own element and skip zero width; pause media when its tab is no longer visible. `useLeaveTab()` returns a function that closes the tab and returns to the tab it was opened from. With the `history` prop, each tab keeps its own history behind the browser's Back and Forward, starting at its `href`: `useTabHistory()` gives `{ path, canGoBack, canGoForward, navigate, back, forward }`. `hasOpenOverlay()` is true while a dialog, menu, listbox, or full-screen element is open, and the workspace's shortcuts wait for it.
@@ -74,6 +76,8 @@ Background tabs stay mounted, so a tab's content asks where it stands: `useTabAc
 ## Slots
 
 The workspace renders no menus or buttons of its own. You fill these slots with your own components, or with `@labpane/ui`:
+
+Menu actions are `{ label, onSelect, disabled? }`, `{ label, items }` for submenus, or `null` for separators. `ActionMenu` from `@labpane/ui` renders these directly.
 
 | Prop                                       |                                                                                                                                      |
 | ------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------ |

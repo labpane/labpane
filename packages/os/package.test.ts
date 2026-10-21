@@ -10,7 +10,7 @@ testPackage(import.meta.dir, {
     "react-dom": "^18.2.0 || ^19.0.0",
   },
   entries: ["index.ts", "pwa.ts"],
-  budget: 18_500,
+  budget: 19_000,
 });
 
 it("keeps PWA browser integration out of the core entry", async () => {

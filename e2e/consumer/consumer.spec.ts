@@ -150,6 +150,94 @@ test("closing an unsaved tab asks first and Escape keeps it", async ({
   await expect(tab(page, "Notes 1")).toHaveCount(0);
 });
 
+for (const [label, expected] of [
+  [
+    "Tabs to the left",
+    ["Notes 1", "Settings 2", "Overview 3", "Notes 4", "Settings 5"],
+  ],
+  ["Tabs to the right", ["Overview 0", "Notes 1", "Settings 5"]],
+  ["Others in this pane", ["Notes 1", "Settings 5"]],
+  ["All others", ["Notes 1"]],
+  ["All tabs and panes", []],
+] as const) {
+  test(`Close submenu: ${label}`, async ({ page }) => {
+    await page.goto("?tabs=6");
+    await tab(page, "Settings 5").click({ button: "right" });
+    await page
+      .getByRole("menuitem", { name: "Split right", exact: true })
+      .click();
+    await expect(page.locator(".lab-pane-header")).toHaveCount(2);
+    await tab(page, "Notes 1").click({ button: "right" });
+    await page.getByRole("menuitem", { name: "Close", exact: true }).hover();
+    const submenu = page.getByRole("menu", { name: "Close", exact: true });
+    await expect(submenu.getByRole("menuitem")).toHaveText([
+      "Tabs to the left",
+      "Tabs to the right",
+      "Others in this pane",
+      "All others",
+      "All tabs and panes",
+    ]);
+    await submenu.getByRole("menuitem", { name: label, exact: true }).click();
+    for (const name of label === "All tabs and panes"
+      ? ["Notes 1", "Notes 4"]
+      : label === "Tabs to the left"
+        ? []
+        : ["Notes 4"]) {
+      const dialog = page.getByRole("alertdialog", {
+        name: `Discard changes in ${name}?`,
+      });
+      await expect(page.getByRole("alertdialog")).toHaveCount(1);
+      await dialog.getByRole("button", { name: "Discard and close" }).click();
+    }
+    await expect(page.getByRole("tab")).toHaveText([...expected]);
+    await expect(page.locator(".lab-pane-header")).toHaveCount(
+      (expected as readonly string[]).includes("Settings 5") ? 2 : 1,
+    );
+    if (!expected.length) {
+      await expect(page.getByText("No tabs open")).toBeVisible();
+      await expect(
+        page.getByRole("button", { name: "Open a tab" }),
+      ).toBeFocused();
+    } else {
+      await expect(tab(page, "Notes 1")).toBeFocused();
+    }
+  });
+}
+
+test("Close submenu works from the keyboard and keeps declined drafts", async ({
+  page,
+}) => {
+  await page.goto("?tabs=6");
+  await tab(page, "Overview 0").click({ button: "right" });
+  const close = page.getByRole("menuitem", { name: "Close", exact: true });
+  await close.focus();
+  await close.press("ArrowRight");
+  await expect(
+    page.getByRole("menuitem", { name: "Tabs to the left" }),
+  ).toHaveAttribute("aria-disabled", "true");
+  await expect(
+    page.getByRole("menuitem", { name: "Tabs to the right", exact: true }),
+  ).toBeFocused();
+  await page.keyboard.press("End");
+  await expect(
+    page.getByRole("menuitem", { name: "All tabs and panes", exact: true }),
+  ).toBeFocused();
+  await page.keyboard.press("Enter");
+  await page
+    .getByRole("alertdialog", { name: "Discard changes in Notes 1?" })
+    .getByRole("button", { name: "Keep tab" })
+    .click();
+  await page
+    .getByRole("alertdialog", { name: "Discard changes in Notes 4?" })
+    .getByRole("button", { name: "Discard and close" })
+    .click();
+  await expect(page.getByRole("tab")).toHaveText(["Notes 1"]);
+  await expect(tab(page, "Notes 1")).toBeFocused();
+  await expect(
+    page.getByRole("textbox", { name: "Notes", exact: true }),
+  ).toHaveValue("Draft");
+});
+
 test("the app's own Radix menu and dialog still close with Escape", async ({
   page,
 }) => {
