@@ -38,6 +38,8 @@ export type WorkspaceTabsProps = {
   items: readonly WorkspaceTab[];
   active: string;
   onClose: (key: string) => void;
+  onCloseTabs: (keys: string[], next?: string) => void;
+  allTabs: readonly string[];
   onDuplicate?: (key: string) => string;
   onReorder: (keys: string[]) => void;
   onSelect: (key: string) => void;
@@ -51,6 +53,8 @@ export function WorkspaceTabs({
   items: sourceItems,
   active,
   onClose,
+  onCloseTabs,
+  allTabs,
   onDuplicate,
   onReorder,
   onSelect,
@@ -89,7 +93,8 @@ export function WorkspaceTabs({
     { width: tabWidth, height, contentHeight } = size,
     width = tabWidth + 16;
   const links = items.map(({ key, label }) => [key, label] as const);
-  const tabOrder = JSON.stringify(items.map(({ key }) => key));
+  const keys = items.map(({ key }) => key);
+  const tabOrder = JSON.stringify(keys);
   const labels = new Map(links);
   const navRef = React.useRef<HTMLDivElement>(null);
   const stripRef = React.useRef<HTMLDivElement>(null);
@@ -713,6 +718,11 @@ export function WorkspaceTabs({
         className="lab-tablist"
       >
         {links.map(([key, text], index) => {
+          const close = (label: string, keys: string[], next?: string) => ({
+            label,
+            disabled: !keys.length,
+            onSelect: () => onCloseTabs(keys, next),
+          });
           const actions: WorkspaceAction[] = menu
             ? [
                 ...(onDuplicate
@@ -748,6 +758,24 @@ export function WorkspaceTabs({
                 })),
                 null,
                 { label: "Close tab", onSelect: () => onClose(key) },
+                {
+                  label: "Close",
+                  items: [
+                    close("Tabs to the left", keys.slice(0, index), key),
+                    close("Tabs to the right", keys.slice(index + 1), key),
+                    close(
+                      "Others in this pane",
+                      keys.filter((tab) => tab !== key),
+                      key,
+                    ),
+                    close(
+                      "All others",
+                      allTabs.filter((tab) => tab !== key),
+                      key,
+                    ),
+                    close("All tabs and panes", [...allTabs]),
+                  ],
+                },
               ]
             : [];
           const target = (

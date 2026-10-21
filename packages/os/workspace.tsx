@@ -174,6 +174,18 @@ function WorkspaceContent<T extends WorkspaceTab>({
   const frontTab = tabsByKey.get(front ?? "");
   useBrowserHistory(history && frontTab ? historyOf(frontTab) : undefined);
   const dirty = useRef(new Map<symbol, string>());
+  const closingTabs = useRef(false);
+  const closeState = {
+    tabsByKey,
+    visibleLayout,
+    front,
+    onClose,
+    confirmClose,
+  };
+  const current = useRef(closeState);
+  useLayoutEffect(() => {
+    current.current = closeState;
+  });
   useEffect(() => {
     const warn = (event: BeforeUnloadEvent) => {
       if (dirty.current.size) event.preventDefault();
@@ -181,40 +193,63 @@ function WorkspaceContent<T extends WorkspaceTab>({
     addEventListener("beforeunload", warn);
     return () => removeEventListener("beforeunload", warn);
   }, []);
-  function close(key: string, next?: string) {
-    const pane = panes(visibleLayout).find((p) => p.tabs.includes(key));
-    if (!pane) return;
-    const remaining = pane.tabs.filter((k) => k !== key);
-    const opener = tabsByKey.get(key)?.opener;
-    const neighbor =
-      next ??
-      remaining.find((key) => key === opener) ??
-      remaining[Math.min(pane.tabs.indexOf(key), remaining.length - 1)] ??
-      tabs.find((t) => t.key !== key)?.key;
-    onClose(key, neighbor);
-    requestAnimationFrame(() =>
-      (
-        links.get(
-          key === pane.active ? (neighbor ?? "") : (pane.active ?? ""),
-        ) ??
-        root.current?.querySelector<HTMLElement>(
-          ".lab-toolbar-end button, [data-pane-sheet]",
-        )
-      )?.focus({ preventScroll: true }),
-    );
-  }
   function requestClose(key: string, next?: string) {
-    if (![...dirty.current.values()].includes(key)) return close(key, next);
-    const tab = tabsByKey.get(key)!;
-    const element = links.get(key);
-    Promise.resolve(
-      confirmClose
-        ? confirmClose(tab)
-        : confirm(`Discard changes in ${tab.label}?`),
-    ).then((discard) => {
-      if (discard) close(key, next);
-      else requestAnimationFrame(() => element?.focus());
-    });
+    void requestCloseTabs([key], next);
+  }
+  async function requestCloseTabs(keys: string[], next?: string) {
+    if (closingTabs.current) return;
+    closingTabs.current = true;
+    try {
+      const closing = new Set<string>();
+      let kept: string | undefined;
+      for (const key of new Set(keys)) {
+        const { tabsByKey, confirmClose } = current.current;
+        const tab = tabsByKey.get(key);
+        if (!tab) continue;
+        if ([...dirty.current.values()].includes(key)) {
+          const discard = await (confirmClose
+            ? confirmClose(tab)
+            : confirm(`Discard changes in ${tab.label}?`));
+          if (!discard) {
+            kept ??= key;
+            continue;
+          }
+        }
+        closing.add(key);
+      }
+      const { tabsByKey, visibleLayout, front, onClose } = current.current;
+      const remaining = [...tabsByKey.keys()].filter(
+        (key) => !closing.has(key),
+      );
+      const survives = (key?: string) =>
+        key !== undefined && remaining.includes(key);
+      let focus = [kept, next, front, remaining[0]].find(survives);
+      const leaves = panes(visibleLayout);
+      for (const key of closing) {
+        const pane = leaves.find((pane) => pane.tabs.includes(key));
+        if (!pane) continue;
+        const index = pane.tabs.indexOf(key);
+        const neighbor = [
+          next,
+          tabsByKey.get(key)?.opener,
+          ...pane.tabs.slice(index + 1),
+          ...pane.tabs.slice(0, index).reverse(),
+          remaining[0],
+        ].find(survives);
+        if (key === front && !kept && !survives(next)) focus = neighbor;
+        onClose(key, neighbor);
+      }
+      requestAnimationFrame(() =>
+        (
+          links.get(focus ?? "") ??
+          root.current?.querySelector<HTMLElement>(
+            ".lab-toolbar-end button, [data-pane-sheet]",
+          )
+        )?.focus({ preventScroll: true }),
+      );
+    } finally {
+      closingTabs.current = false;
+    }
   }
   function leave(key: string) {
     const opener = openers.get(key) ?? tabsByKey.get(key)?.opener;
@@ -321,6 +356,8 @@ function WorkspaceContent<T extends WorkspaceTab>({
                   : undefined
               }
               onClose={requestClose}
+              onCloseTabs={requestCloseTabs}
+              allTabs={tabs.map((tab) => tab.key)}
               onReorder={(keys) =>
                 change(
                   updateLayout(visibleLayout, pane.id, (node) => ({
