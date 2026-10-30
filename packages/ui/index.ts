@@ -49,6 +49,7 @@ export * from "./tabs.js";
 export * from "./textarea.js";
 export * from "./theme.js";
 export * from "./time-series-chart.js";
+export * from "./timeline-chart.js";
 export * from "./timing-tracks.js";
 export * from "./toggle.js";
 export * from "./tooltip.js";

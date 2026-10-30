@@ -45,6 +45,7 @@ export const sections = [
   ["side-panel", "SidePanel"],
   ["browser-layout", "BrowserLayout"],
   ["time-series", "TimeSeriesChart"],
+  ["timeline", "TimelineChart and Sparkline"],
   ["histogram", "HistogramChart"],
   ["flame-graph", "FlameGraph"],
   ["timing-tracks", "TimingTracks and ChartFrame"],

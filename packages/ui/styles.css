@@ -54,6 +54,9 @@
   --labui-chart-3: #116d3b;
   --labui-chart-4: #b8741a;
   --labui-chart-5: #7a4ea0;
+  --labui-chart-step-1: #59b6c9;
+  --labui-chart-step-2: #1d9db4;
+  --labui-chart-step-3: #05697a;
   --labui-sidebar: #f6f6f6;
   --labui-sidebar-foreground: #242424;
   --labui-sidebar-primary: #05697a;
@@ -103,6 +106,9 @@
   --labui-chart-3: #3ddc84;
   --labui-chart-4: #e0a84a;
   --labui-chart-5: #b58ce0;
+  --labui-chart-step-1: #126b7c;
+  --labui-chart-step-2: #1d9db4;
+  --labui-chart-step-3: #8fd3e2;
   --labui-sidebar: #202020;
   --labui-sidebar-foreground: #e8e8e8;
   --labui-sidebar-primary: #68bccf;
@@ -162,6 +168,9 @@
   --color-chart-3: var(--labui-chart-3);
   --color-chart-4: var(--labui-chart-4);
   --color-chart-5: var(--labui-chart-5);
+  --color-chart-step-1: var(--labui-chart-step-1);
+  --color-chart-step-2: var(--labui-chart-step-2);
+  --color-chart-step-3: var(--labui-chart-step-3);
   --color-sidebar: var(--labui-sidebar);
   --color-sidebar-foreground: var(--labui-sidebar-foreground);
   --color-sidebar-primary: var(--labui-sidebar-primary);
