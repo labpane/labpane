@@ -33,7 +33,7 @@ Radix and React are peer dependencies, so your app keeps one copy of each. The s
 | Dialogs    | `Dialog` and its parts, `Sheet` and its parts, `ConfirmDialog`, `DiscardDialog`                                                                                                                                |
 | Menus      | `DropdownMenu` and its parts, `OptionMenu`, `ActionMenu`, `MenuContent`                                                                                                                                        |
 | Tables     | `Table`, `TableStack`, `column`, `mono`, `num`                                                                                                                                                                 |
-| Charts     | `TimeSeriesChart`, `HistogramChart`, `HistogramSparkline`, `FlameGraph`, `TimingTracks`, `ChartFrame`                                                                                                          |
+| Charts     | `TimeSeriesChart`, `TimelineChart`, `Sparkline`, `HistogramChart`, `HistogramSparkline`, `FlameGraph`, `TimingTracks`, `ChartFrame`                                                                            |
 | Workspace  | `AppMenu` with `AppMenuSection`; `useTabActive` and `useTabVisible` read the tab state that `@labpane/os` provides                                                                                             |
 
 `cn()` merges class names and lets your own Tailwind classes override the `labui:` defaults they conflict with.

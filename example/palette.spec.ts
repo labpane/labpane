@@ -63,8 +63,8 @@ test("the palette shows every section and its overlays work", async ({
   page,
 }) => {
   await page.goto("palette/");
-  await expect(page.locator(".palette-section > h2")).toHaveCount(48);
-  await expect(page.locator(".palette-toc a")).toHaveCount(48);
+  await expect(page.locator(".palette-section > h2")).toHaveCount(49);
+  await expect(page.locator(".palette-toc a")).toHaveCount(49);
   await expect(page.locator(".swatch")).not.toHaveCount(0);
   expect(await fits(page)).toBe(true);
 

@@ -6,13 +6,17 @@ import {
   FlameGraph,
   HistogramChart,
   HistogramSparkline,
+  Sparkline,
   Table,
   TimeSeriesChart,
+  TimelineChart,
   TimingTracks,
   column,
   type FlameNode,
   type HistogramBin,
   type SeriesPoint,
+  type TimelineMetric,
+  type TimelineSeries,
   type TimingTrack,
 } from "@labpane/ui";
 import { Section, Specimen } from "./section";
@@ -64,6 +68,143 @@ export function TimeSeries() {
           unit="samples"
           label="Samples processed per day"
         />
+      </Specimen>
+    </Section>
+  );
+}
+
+const runStart = Date.UTC(2026, 0, 5, 14, 0, 0);
+const runSeconds = 600;
+const run: TimelineSeries = {
+  start: runStart,
+  interval: 1000,
+  fields: [
+    "t",
+    "viewers",
+    "active",
+    "below",
+    "bitrate",
+    "fps_p10",
+    "fps_p50",
+    "fps_p90",
+    "s0",
+    "s1",
+    "s2",
+  ],
+  points: Array.from({ length: runSeconds }, (_, i) => {
+    const t = i + 1;
+    const joined = Math.min(120, Math.ceil(t * 2));
+    const active = t > runSeconds - 5 ? 0 : joined;
+    const dip = t >= 270 && t <= 360;
+    const degraded = dip ? Math.min(active, 16) : 0;
+    const fps = (dip ? 22.5 : 24.6) + 0.3 * Math.sin(t / 3);
+    return [
+      runStart + t * 1000,
+      joined,
+      active,
+      degraded,
+      Math.round(active * fps * 120_000 * (1 - (degraded / 120) * 0.3)),
+      Number((dip ? 16 + Math.sin(t / 2) : fps - 0.4).toFixed(2)),
+      Number(fps.toFixed(2)),
+      Number((fps + 0.3).toFixed(2)),
+      0,
+      degraded,
+      active - degraded,
+    ];
+  }),
+};
+const viewerMetric: TimelineMetric = {
+  id: "viewers",
+  title: "Viewers",
+  unit: "",
+  line: "active",
+  lineLabel: "active",
+  context: "viewers",
+  contextLabel: "joined",
+  status: "below",
+  statusLabel: "below threshold",
+  digits: 0,
+};
+const bitrateMetric: TimelineMetric = {
+  id: "bitrate",
+  title: "Bitrate",
+  unit: "Mbps",
+  line: "bitrate",
+  scale: 1e-6,
+  digits: 1,
+};
+const fpsMetric: TimelineMetric = {
+  id: "fps",
+  title: "FPS",
+  unit: "fps",
+  line: "fps_p50",
+  lineLabel: "median",
+  band: ["fps_p10", "fps_p90"],
+  threshold: 20,
+  thresholdLabel: "min",
+  summary: "mean",
+};
+const layersMetric: TimelineMetric = {
+  id: "layers",
+  title: "Spatial layers",
+  unit: "",
+  line: "s2",
+  stack: [
+    { field: "s0", label: "S0" },
+    { field: "s1", label: "S1" },
+    { field: "s2", label: "S2" },
+  ],
+  digits: 0,
+};
+const trend = run.points
+  .filter((_, i) => i % 10 === 0)
+  .map((p) => (p[4] ?? 0) / 1e6);
+
+export function Timelines() {
+  const [hover, setHover] = useState<number | null>(null);
+  return (
+    <Section
+      id="timeline"
+      intro={
+        <>
+          Second-resolution series from a running job: a line with a percentile
+          band, a context line, a status line, a limit, and a stack of ordered
+          layers. Charts given the same <code>hover</code> share one crosshair
+          and read out the same moment. <code>Sparkline</code> is the same trend
+          for a table cell or a stat.
+        </>
+      }
+    >
+      <Specimen label="TimelineChart sharing a hover" stack>
+        <div className="specimen-grid specimen-grid-wide">
+          <TimelineChart
+            series={run}
+            metric={viewerMetric}
+            hover={hover}
+            onHover={setHover}
+          />
+          <TimelineChart
+            series={run}
+            metric={bitrateMetric}
+            hover={hover}
+            onHover={setHover}
+          />
+          <TimelineChart
+            series={run}
+            metric={fpsMetric}
+            hover={hover}
+            onHover={setHover}
+          />
+          <TimelineChart
+            series={run}
+            metric={layersMetric}
+            hover={hover}
+            onHover={setHover}
+          />
+        </div>
+      </Specimen>
+      <Specimen label="Sparkline">
+        <Sparkline values={trend} label="Bitrate trend" />
       </Specimen>
     </Section>
   );

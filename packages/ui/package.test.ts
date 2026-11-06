@@ -21,7 +21,7 @@ testPackage(import.meta.dir, {
     "@radix-ui/react-toggle": "^1.1.19",
     "@radix-ui/react-toggle-group": "^1.1.20",
     "@radix-ui/react-tooltip": "^1.3.0",
-    "@wterm/dom": "^0.5.4",
+    "@wterm/dom": "^0.5.7",
     react: "^18.2.0 || ^19.0.0",
     "react-dom": "^18.2.0 || ^19.0.0",
   },

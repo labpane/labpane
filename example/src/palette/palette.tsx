@@ -79,6 +79,7 @@ import {
   FlameGraphs,
   Histograms,
   TimeSeries,
+  Timelines,
   TimingTracksDemo,
 } from "./charts";
 import {
@@ -1389,6 +1390,7 @@ export function Palette() {
           <SidePanels />
           <BrowserLayouts />
           <TimeSeries />
+          <Timelines />
           <Histograms />
           <FlameGraphs />
           <TimingTracksDemo />
