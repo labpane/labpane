@@ -1,5 +1,9 @@
 # @labpane/os
 
+## 1.5.0
+
+No changes in this release.
+
 ## 1.4.2
 
 ### Patch Changes
