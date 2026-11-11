@@ -20,7 +20,7 @@
     "@radix-ui/react-popover": "^1.1.15",
     "@radix-ui/react-select": "^2.2.6",
     "@radix-ui/react-slot": "^1.2.3",
-    "@wterm/dom": "^0.5.7",
+    "@wterm/dom": "^0.5.9",
     "lucide-react": "^1.64.0",
     "react": "^19.3.1",
     "react-dom": "^19.3.1"
