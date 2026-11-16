@@ -29,6 +29,7 @@ export function useWindowControlsOverlay(
   enabled = true,
 ): WindowControlsOverlay {
   const root = useRef<HTMLDivElement>(null);
+  const frame = useRef(0);
   const [area, setArea] = useState<TitlebarArea>();
   useLayoutEffect(() => {
     const overlay = (
@@ -66,10 +67,9 @@ export function useWindowControlsOverlay(
           : next,
       );
     };
-    let frame = 0;
     const schedule = () => {
-      cancelAnimationFrame(frame);
-      frame = requestAnimationFrame(measure);
+      cancelAnimationFrame(frame.current);
+      frame.current = requestAnimationFrame(measure);
     };
     measure();
     const observer = new ResizeObserver(schedule);
@@ -79,7 +79,7 @@ export function useWindowControlsOverlay(
     window.addEventListener("scroll", schedule, true);
     document.addEventListener("fullscreenchange", schedule);
     return () => {
-      cancelAnimationFrame(frame);
+      cancelAnimationFrame(frame.current);
       observer.disconnect();
       overlay.removeEventListener("geometrychange", schedule);
       window.removeEventListener("resize", schedule);
