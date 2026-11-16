@@ -1,5 +1,11 @@
 # @labpane/os
 
+## 1.5.1
+
+### Patch Changes
+
+- d6f15ea: Keep the window controls overlay animation frame in a ref for compatibility with updated React lint checks.
+
 ## 1.5.0
 
 No changes in this release.
