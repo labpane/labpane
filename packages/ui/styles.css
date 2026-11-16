@@ -88,7 +88,7 @@
   --labui-accent: #363636;
   --labui-accent-foreground: #f3f3f3;
   --labui-destructive: #f0808c;
-  --labui-destructive-foreground: #ffffff;
+  --labui-destructive-foreground: #1c1c1c;
   --labui-destructive-muted: color-mix(in srgb, #f0808c 12%, #242424);
   --labui-success: #3ddc84;
   --labui-success-foreground: #06271a;

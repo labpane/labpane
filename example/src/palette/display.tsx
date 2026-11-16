@@ -157,7 +157,7 @@ export function Breadcrumbs() {
       }
     >
       <Specimen label="Breadcrumb with BreadcrumbSeparator" stack>
-        <Breadcrumb>
+        <Breadcrumb aria-label="Project breadcrumb">
           <BreadcrumbList>
             <BreadcrumbItem>
               <BreadcrumbLink href="#breadcrumb">Projects</BreadcrumbLink>
@@ -174,7 +174,7 @@ export function Breadcrumbs() {
         </Breadcrumb>
       </Specimen>
       <Specimen label="BreadcrumbEllipsis and a custom separator" stack>
-        <Breadcrumb>
+        <Breadcrumb aria-label="Archive breadcrumb">
           <BreadcrumbList>
             <BreadcrumbItem>
               <BreadcrumbLink href="#breadcrumb">Archive</BreadcrumbLink>

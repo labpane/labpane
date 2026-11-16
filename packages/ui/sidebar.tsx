@@ -303,10 +303,11 @@ const SidebarRail = React.forwardRef<
 
 const SidebarInset = React.forwardRef<
   HTMLElement,
-  React.ComponentPropsWithoutRef<"main">
->(function SidebarInset({ className, ...props }, ref) {
+  React.ComponentPropsWithoutRef<"main"> & { asChild?: boolean }
+>(function SidebarInset({ className, asChild = false, ...props }, ref) {
+  const Comp = asChild ? Slot : "main";
   return (
-    <main
+    <Comp
       ref={ref}
       data-slot="sidebar-inset"
       className={cn(

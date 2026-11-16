@@ -664,13 +664,17 @@ export function WorkspaceTabs({
   return (
     <div ref={stripRef} className="lab-tabs">
       {scrollButton(-1)}
+      {/* Own only the tabs in the accessibility tree. Close buttons stay sibling controls. */}
+      {links.length > 0 && (
+        <div
+          role="tablist"
+          aria-label={`Workspace tabs: ${labels.get(active)}`}
+          aria-describedby={helpId}
+          aria-owns={links.map(([key]) => ids.tab(key)).join(" ")}
+        />
+      )}
       <div
         ref={navRef}
-        role={links.length ? "tablist" : undefined}
-        aria-label={
-          links.length ? `Workspace tabs: ${labels.get(active)}` : undefined
-        }
-        aria-describedby={links.length ? helpId : undefined}
         onKeyDownCapture={() => setPointerFocus(false)}
         onBlurCapture={() => setPointerFocus(false)}
         onPointerDownCapture={() => {

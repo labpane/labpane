@@ -1,4 +1,5 @@
 import * as React from "react";
+import { Slot } from "@radix-ui/react-slot";
 import { PanelLeftIcon } from "lucide-react";
 import { Button } from "./button.js";
 import { cn } from "./classes.js";
@@ -89,10 +90,11 @@ const BrowserLayoutNav = React.forwardRef<
 
 const BrowserLayoutPane = React.forwardRef<
   HTMLElement,
-  React.ComponentPropsWithoutRef<"main">
->(function BrowserLayoutPane({ className, ...props }, ref) {
+  React.ComponentPropsWithoutRef<"main"> & { asChild?: boolean }
+>(function BrowserLayoutPane({ className, asChild = false, ...props }, ref) {
+  const Comp = asChild ? Slot : "main";
   return (
-    <main
+    <Comp
       ref={ref}
       data-slot="browser-layout-pane"
       className={cn(

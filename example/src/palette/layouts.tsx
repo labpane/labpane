@@ -192,16 +192,21 @@ export function Sidebars() {
               </SidebarFooter>
               <SidebarRail />
             </Sidebar>
-            <SidebarInset>
-              <header className="inset-header">
-                <SidebarTrigger />
-                <Separator orientation="vertical" className="inset-separator" />
-                <span>{current.label}</span>
-              </header>
-              <div className="inset-body muted">
-                Pick a page in the sidebar. The trigger, or the rail on the
-                sidebar's edge, collapses it to icons.
-              </div>
+            <SidebarInset asChild>
+              <section aria-label="Sidebar content example">
+                <header className="inset-header">
+                  <SidebarTrigger />
+                  <Separator
+                    orientation="vertical"
+                    className="inset-separator"
+                  />
+                  <span>{current.label}</span>
+                </header>
+                <div className="inset-body muted">
+                  Pick a page in the sidebar. The trigger, or the rail on the
+                  sidebar's edge, collapses it to icons.
+                </div>
+              </section>
             </SidebarInset>
           </SidebarProvider>
         </div>
@@ -504,24 +509,26 @@ export function BrowserLayouts() {
                 ))}
               </ul>
             </BrowserLayoutNav>
-            <BrowserLayoutPane>
-              <header className="inset-header">
-                <BrowserLayoutToggle />
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="browser-back"
-                  onClick={() => setView("nav")}
-                >
-                  <ArrowLeftIcon />
-                  Datasets
-                </Button>
-                <span>{picked.name}</span>
-              </header>
-              <div className="inset-body muted">
-                {picked.samples.toLocaleString("en-US")} samples. Pick another
-                dataset in the list.
-              </div>
+            <BrowserLayoutPane asChild>
+              <section aria-label="Browser content example">
+                <header className="inset-header">
+                  <BrowserLayoutToggle />
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="browser-back"
+                    onClick={() => setView("nav")}
+                  >
+                    <ArrowLeftIcon />
+                    Datasets
+                  </Button>
+                  <span>{picked.name}</span>
+                </header>
+                <div className="inset-body muted">
+                  {picked.samples.toLocaleString("en-US")} samples. Pick another
+                  dataset in the list.
+                </div>
+              </section>
             </BrowserLayoutPane>
           </BrowserLayout>
         </div>

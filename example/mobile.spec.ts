@@ -124,7 +124,7 @@ test("swiping tabs scrolls without selecting or dragging; tapping still selects"
     "CDP provides native swipe input in Chromium",
   );
   await page.goto("./");
-  const strip = page.getByRole("tablist");
+  const strip = page.locator(".lab-tablist");
   await strip.scrollIntoViewIfNeeded();
   const box = (await strip.boundingBox())!;
   const selected = page.getByRole("tab", { selected: true });

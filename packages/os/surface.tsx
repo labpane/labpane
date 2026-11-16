@@ -229,7 +229,7 @@ export function WorkspaceSurface({
       let index: number | undefined;
       if (valid && !edge) {
         const nav = board.current!.querySelector<HTMLElement>(
-          `[data-pane-header="${CSS.escape(target.pane.id)}"] [role="tablist"]`,
+          `[data-pane-header="${CSS.escape(target.pane.id)}"] .lab-tablist`,
         );
         const header = nav?.closest<HTMLElement>("[data-pane-header]");
         index = target.pane.tabs.length;

@@ -61,6 +61,7 @@ const AvatarBadge = React.forwardRef<
     <span
       ref={ref}
       data-slot="avatar-badge"
+      role={props["aria-label"] || props["aria-labelledby"] ? "img" : undefined}
       className={cn(
         "labui:absolute labui:right-0 labui:bottom-0 labui:z-10 labui:inline-flex labui:items-center labui:justify-center labui:rounded-full labui:bg-primary labui:text-primary-foreground labui:ring-2 labui:ring-background labui:select-none",
         "labui:group-data-[size=sm]/avatar:size-2 labui:group-data-[size=sm]/avatar:[&>svg]:hidden",

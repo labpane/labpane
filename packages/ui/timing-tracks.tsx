@@ -1,5 +1,6 @@
 import * as React from "react";
 import { ChartFrame } from "./chart-frame.js";
+import { useChartWidth } from "./use-chart-width.js";
 
 export type TimingSpan = {
   id: string;
@@ -32,22 +33,43 @@ const TimingTracks = React.forwardRef<HTMLDivElement, TimingTracksProps>(
     { tracks, from, to, label = "Timeline", unit = "ms", onSelect },
     ref,
   ) {
+    const { container, width } = useChartWidth();
+    React.useImperativeHandle(ref, () => container.current as HTMLDivElement, [
+      container,
+    ]);
+    const plotWidth = Math.max(560, width - 32) - 142;
     const [active, setActive] = React.useState<TimingSpan | null>(null);
     const range = Math.max(0.001, to - from);
     const visible = (span: TimingSpan) => span.end >= from && span.start <= to;
-    const placement = (span: TimingSpan) => {
-      const left = Math.max(from, span.start);
-      const right = Math.min(to, span.end);
-      return {
-        left: `${((left - from) / range) * 100}%`,
-        width: `max(3px, ${((right - left) / range) * 100}%)`,
-      };
+    // Preserve the measured interval inside a target at least 24px wide.
+    // Put overlapping targets on separate lanes so every span can be selected.
+    const layout = (track: TimingTrack) => {
+      const lanes: number[] = [];
+      const spans = track.spans.filter(visible).map((span) => {
+        const start = ((Math.max(from, span.start) - from) / range) * plotWidth;
+        const end = ((Math.min(to, span.end) - from) / range) * plotWidth;
+        const barWidth = Math.max(3, end - start);
+        const targetWidth = Math.max(24, barWidth);
+        const left = Math.max(0, Math.min(start, plotWidth - targetWidth));
+        let lane = lanes.findIndex((right) => right + 4 <= left);
+        if (lane < 0) lane = lanes.length;
+        lanes[lane] = left + targetWidth;
+        return {
+          span,
+          left,
+          targetWidth,
+          barWidth,
+          offset: start - left,
+          lane,
+        };
+      });
+      return { spans, height: Math.max(1, lanes.length) * 32 + 4 };
     };
     const duration = (span: TimingSpan) =>
       `${formatValue(span.end - span.start)} ${unit}`;
 
     return (
-      <ChartFrame data-slot="timing-tracks" aria-label={label} ref={ref}>
+      <ChartFrame data-slot="timing-tracks" aria-label={label} ref={container}>
         <div className="labui:border-b labui:px-4 labui:py-3 labui:text-sm labui:font-semibold">
           {label}
         </div>
@@ -60,46 +82,64 @@ const TimingTracks = React.forwardRef<HTMLDivElement, TimingTracksProps>(
                 </span>
               ))}
             </div>
-            {tracks.map((track) => (
-              <div
-                key={track.id}
-                className="labui:mb-2 labui:flex labui:items-center labui:gap-3"
-              >
-                <span className="labui:w-32 labui:shrink-0 labui:text-xs labui:font-medium">
-                  {track.label}
-                </span>
+            {tracks.map((track) => {
+              const { spans, height } = layout(track);
+              return (
                 <div
-                  className="labui:relative labui:h-9 labui:flex-1 labui:rounded labui:border labui:bg-muted/30"
-                  aria-label={track.label}
+                  key={track.id}
+                  className="labui:mb-2 labui:flex labui:items-center labui:gap-3"
                 >
-                  {track.spans.filter(visible).map((span) => (
-                    <button
-                      key={span.id}
-                      type="button"
-                      className="labui:absolute labui:top-1 labui:h-7 labui:overflow-hidden labui:rounded labui:px-1 labui:text-left labui:text-[11px] labui:text-primary-foreground labui:outline-offset-2 labui:focus-visible:outline-2"
-                      style={{
-                        ...placement(span),
-                        background: span.color || "var(--labui-chart-4)",
-                        border: span.uncertain
-                          ? "1px dashed currentColor"
-                          : undefined,
-                        opacity: span.uncertain ? 0.65 : 1,
-                      }}
-                      title={`${span.label}: ${duration(span)}. ${span.detail ?? ""}`}
-                      onPointerEnter={() => setActive(span)}
-                      onFocus={() => setActive(span)}
-                      onClick={() => {
-                        setActive(span);
-                        onSelect?.(span);
-                      }}
-                      aria-label={`${span.label}, ${formatValue(span.start)} to ${formatValue(span.end)} ${unit}${span.uncertain ? ", observation window" : ""}`}
-                    >
-                      {span.label}
-                    </button>
-                  ))}
+                  <span className="labui:w-32 labui:shrink-0 labui:text-xs labui:font-medium">
+                    {track.label}
+                  </span>
+                  <div
+                    className="labui:relative labui:flex-1 labui:rounded labui:border labui:bg-muted/30"
+                    style={{ height }}
+                    role="group"
+                    aria-label={track.label}
+                  >
+                    {spans.map(
+                      ({ span, left, targetWidth, barWidth, offset, lane }) => (
+                        <button
+                          key={span.id}
+                          type="button"
+                          className="labui:absolute labui:h-7 labui:overflow-hidden labui:rounded labui:px-1 labui:text-left labui:text-[11px] labui:outline-offset-2 labui:focus-visible:outline-2"
+                          style={{
+                            left,
+                            top: lane * 32 + 4,
+                            width: targetWidth,
+                          }}
+                          title={`${span.label}: ${duration(span)}. ${span.detail ?? ""}`}
+                          onPointerEnter={() => setActive(span)}
+                          onFocus={() => setActive(span)}
+                          onClick={() => {
+                            setActive(span);
+                            onSelect?.(span);
+                          }}
+                          aria-label={`${span.label}, ${formatValue(span.start)} to ${formatValue(span.end)} ${unit}${span.uncertain ? ", observation window" : ""}`}
+                        >
+                          <span
+                            aria-hidden="true"
+                            className="labui:absolute labui:inset-y-0 labui:rounded"
+                            style={{
+                              left: offset,
+                              width: barWidth,
+                              background: span.color || "var(--labui-chart-4)",
+                              border: span.uncertain
+                                ? "1px dashed var(--labui-foreground)"
+                                : undefined,
+                            }}
+                          />
+                          <span className="labui:relative labui:whitespace-nowrap labui:rounded labui:bg-card labui:px-0.5 labui:text-card-foreground">
+                            {span.label}
+                          </span>
+                        </button>
+                      ),
+                    )}
+                  </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </div>
         <div
