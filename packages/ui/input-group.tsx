@@ -62,7 +62,7 @@ const InputGroupAddon = React.forwardRef<
       data-slot="input-group-addon"
       data-align={align}
       className={cn(
-        "labui:flex labui:h-auto labui:cursor-text labui:items-center labui:justify-center labui:gap-2 labui:py-1.5 labui:text-sm labui:font-medium labui:text-muted-foreground labui:select-none labui:group-data-[disabled=true]/input-group:opacity-50 labui:[&>kbd]:rounded-[calc(var(--labui-radius)-5px)] labui:[&>svg:not([class*='size-'])]:size-4",
+        "labui:flex labui:h-auto labui:cursor-text labui:items-center labui:justify-center labui:gap-2 labui:py-1.5 labui:text-sm labui:font-medium labui:text-muted-foreground labui:select-none labui:[&>kbd]:rounded-[calc(var(--labui-radius)-5px)] labui:[&>svg:not([class*='size-'])]:size-4",
         addonAlignments[align],
         className,
       )}

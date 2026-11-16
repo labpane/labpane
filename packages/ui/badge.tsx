@@ -8,9 +8,9 @@ const badgeVariants = {
   secondary:
     "labui:bg-secondary labui:text-secondary-foreground labui:[a&]:hover:bg-secondary/90",
   destructive:
-    "labui:border-destructive/30 labui:bg-destructive/15 labui:text-destructive labui:focus-visible:ring-destructive/20 labui:[a&]:hover:bg-destructive/25",
+    "labui:border-destructive/30 labui:bg-destructive-muted labui:text-destructive labui:focus-visible:ring-destructive/20 labui:[a&]:hover:underline",
   success:
-    "labui:border-success/30 labui:bg-success/15 labui:text-success labui:[a&]:hover:bg-success/25",
+    "labui:border-success/30 labui:bg-success/10 labui:text-success labui:[a&]:hover:underline",
   warning:
     "labui:border-warning/30 labui:bg-warning/15 labui:text-warning labui:[a&]:hover:bg-warning/25",
   info: "labui:border-info/30 labui:bg-info/15 labui:text-info labui:[a&]:hover:bg-info/25",

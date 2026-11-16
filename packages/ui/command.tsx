@@ -137,6 +137,7 @@ const CommandSeparator = React.forwardRef<
     <CommandPrimitive.Separator
       ref={ref}
       data-slot="command-separator"
+      aria-hidden="true"
       className={cn("labui:-mx-1 labui:h-px labui:bg-border", className)}
       {...props}
     />

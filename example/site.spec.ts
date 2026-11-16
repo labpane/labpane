@@ -104,7 +104,7 @@ test.describe("in a desktop window", () => {
     test.skip(info.project.name !== "desktop", "desktop windows are wide");
     await page.setViewportSize({ width: 960, height: 640 });
     await page.goto("desktop/?platform=macos");
-    const strip = page.getByRole("tablist").last();
+    const strip = page.locator(".lab-tablist").last();
     await expect(strip.getByRole("tab")).toHaveCount(2);
     for (const width of [960, 1440, 900, 960]) {
       await page.setViewportSize({ width, height: 640 });

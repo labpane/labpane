@@ -7,3 +7,4 @@ playwright-report/
 desktop-smoke/
 e2e/desktop/labpane-desktop
 e2e/desktop/labpane-desktop.exe
+lighthouse-reports/

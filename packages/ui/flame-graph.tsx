@@ -339,7 +339,7 @@ const FlameGraph = React.forwardRef<HTMLDivElement, FlameGraphProps>(
                         role="button"
                         tabIndex={current ? 0 : -1}
                         data-node-id={node.id}
-                        aria-label={`${node.name}, total ${formatValue(node.total)} ${unit}, self ${formatValue(node.self)} ${unit}. Press to zoom in`}
+                        aria-label={`${node.name}, total ${formatValue(node.total)} ${unit}, self ${formatValue(node.self)} ${unit}. ${barWidth > 38 ? `Displayed: ${barText(node, barWidth, root.total)}. ` : ""}Press to zoom in`}
                         className="labui:cursor-pointer labui:outline-none labui:focus-visible:[&>rect]:stroke-foreground labui:focus-visible:[&>rect]:stroke-2"
                         onClick={() => zoom(node)}
                         onKeyDown={(event) => keydown(event, node)}
