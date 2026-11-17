@@ -123,9 +123,18 @@ export function WorkspaceSurface({
   type ResizeDraft = { base: Layout; layout: Layout };
   const [resizeDraft, setResizeDraft] = useState<ResizeDraft>();
   const resizeDraftRef = useRef<ResizeDraft | undefined>(undefined);
+  const resizeStart = useRef<
+    | {
+        pointerId: number;
+        coordinate: number;
+        ratio: number;
+      }
+    | undefined
+  >(undefined);
   const displayedLayout =
     resizeDraft?.base === layout ? resizeDraft.layout : layout;
   const cancelResize = () => {
+    resizeStart.current = undefined;
     resizePointer.cancel();
     resizeDraftRef.current = undefined;
     setResizeDraft(undefined);
@@ -425,42 +434,58 @@ export function WorkspaceSurface({
               aria-valuemax={Math.round(high * 100)}
               tabIndex={0}
               className="lab-divider"
-              style={position({
-                ...box,
-                [axis]: box[axis] + gutter[axis] / 2 - 12,
-                [dimension]: 24,
-              })}
+              style={{
+                ...position(box),
+                [horizontal ? "left" : "top"]:
+                  `calc(${box[axis] + gutter[axis] / 2}px - var(--lab-divider-hit-size) / 2)`,
+                [dimension]: "var(--lab-divider-hit-size)",
+              }}
               onDoubleClick={() => resize(horizontal ? 0.5 : 2 / 3)}
               onPointerDown={(event) => {
-                if (event.button !== 0) return;
+                if (event.button !== 0 || resizeStart.current) return;
                 event.preventDefault();
+                resizeStart.current = {
+                  pointerId: event.pointerId,
+                  coordinate: horizontal ? event.clientX : event.clientY,
+                  ratio,
+                };
                 event.currentTarget.setPointerCapture(event.pointerId);
                 setResizing(true);
               }}
               onPointerMove={(event) => {
-                if (!event.currentTarget.hasPointerCapture(event.pointerId))
+                const start = resizeStart.current;
+                if (
+                  !start ||
+                  start.pointerId !== event.pointerId ||
+                  !event.currentTarget.hasPointerCapture(event.pointerId)
+                )
                   return;
                 const { clientX, clientY } = event;
                 resizePointer.schedule(() => {
-                  const b = board.current!.getBoundingClientRect();
-                  const coordinate = horizontal
-                    ? clientX - b.left
-                    : clientY - b.top;
+                  const coordinate = horizontal ? clientX : clientY;
                   resize(
-                    (coordinate - bounds[axis]) /
-                      (bounds[dimension] - gutter[axis]),
+                    start.ratio +
+                      (coordinate - start.coordinate) /
+                        (bounds[dimension] - gutter[axis]),
                     true,
                   );
                 });
               }}
-              onPointerUp={() => {
+              onPointerUp={(event) => {
+                if (resizeStart.current?.pointerId !== event.pointerId) return;
                 resizePointer.flush();
                 const draft = resizeDraftRef.current;
                 if (draft?.base === layout) change(draft.layout);
                 cancelResize();
               }}
-              onPointerCancel={cancelResize}
-              onLostPointerCapture={cancelResize}
+              onPointerCancel={(event) => {
+                if (resizeStart.current?.pointerId === event.pointerId)
+                  cancelResize();
+              }}
+              onLostPointerCapture={(event) => {
+                if (resizeStart.current?.pointerId === event.pointerId)
+                  cancelResize();
+              }}
               onKeyDown={(event) => {
                 if (hasOpenOverlay()) return;
                 const step = event.shiftKey ? 0.1 : 0.02;

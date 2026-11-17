@@ -73,6 +73,8 @@ The tab menu's **Close** submenu can close tabs to the left or right, other tabs
 
 Background tabs stay mounted, so a tab's content asks where it stands: `useTabActive()` is true for the tab in front of the focused pane and `useTabVisible()` for every tab on screen, including split panes (`useTabVisibleRef()` for listeners, `useShownOnce(visible)` to mount once). Gate polling, intervals, window listeners, and portaled overlays on them; redraw charts and canvases from a `ResizeObserver` on their own element and skip zero width; pause media when its tab is no longer visible. `useLeaveTab()` returns a function that closes the tab and returns to the tab it was opened from. With the `history` prop, each tab keeps its own history behind the browser's Back and Forward, starting at its `href`: `useTabHistory()` gives `{ path, canGoBack, canGoForward, navigate, back, forward }`. `hasOpenOverlay()` is true while a dialog, menu, listbox, or full-screen element is open, and the workspace's shortcuts wait for it.
 
+For a Back button in an editor or detail view, `useTabBack()` returns `{ canGoBack, back }`. It returns through the current tab's `useTabHistory()` entries first, then through previously selected tabs in the same pane. Back keeps tabs mounted and preserves unsaved drafts. Closed tabs and tabs moved to another pane are skipped. Render the button only when `canGoBack`, or disable it otherwise.
+
 ## Slots
 
 The workspace renders no menus or buttons of its own. You fill these slots with your own components, or with `@labpane/ui`:
@@ -187,7 +189,9 @@ The host interface has no Wails, Go, Tauri, or Electron dependency. Applications
 
 ## Keyboard
 
-On touch devices, swipe the tab bar to scroll it and tap a tab to select it. An overflowing bar also has a native tab picker at its end. Swiping does not reorder or split tabs. If you supply a `menu`, touch and hold a tab to use its move and split actions. Mouse dragging and keyboard actions remain available.
+On touch devices, swipe the tab bar to scroll it and tap a tab to select it. To reorder or dock a tab, hold it briefly before dragging. Keeping the finger still for a longer hold opens the tab's actions when a `menu` is supplied. An overflowing bar also has a native tab picker at its end. Split dividers have visible grips and 44px touch targets on devices with a coarse pointer; either orientation can be resized without jumping when the drag begins off-center. Mouse dragging and keyboard actions remain available.
+
+Swipe non-interactive panel content left or right to select the next or previous tab in that pane. The gesture stops at the first and last tab. Vertical scrolling, pinch gestures, form controls, and horizontally scrollable content retain their native behavior. Use `data-no-swipe` on a custom gesture surface, such as a canvas editor, or set `swipeTabs={false}` on `Workspace` to disable tab swiping altogether.
 
 Workspace panels scroll their content independently. Make page headers and action rows wrap, use `min-width: 0` for flex children, and keep wide tables or code blocks in their own scroll containers. A fixed `min-width` on application content can still make a panel scroll sideways even when the document fits the screen.
 

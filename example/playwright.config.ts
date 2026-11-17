@@ -18,13 +18,23 @@ export default defineConfig({
   projects: [
     {
       name: "desktop",
-      testIgnore: "mobile.spec.ts",
+      testIgnore: ["mobile.spec.ts", "touch.spec.ts"],
       use: { viewport: { width: 1440, height: 900 } },
     },
     {
       name: "phone",
-      testIgnore: "mobile.spec.ts",
+      testIgnore: ["mobile.spec.ts", "touch.spec.ts"],
       use: { viewport: { width: 375, height: 812 } },
+    },
+    {
+      name: "touch-desktop",
+      testMatch: "touch.spec.ts",
+      use: { viewport: { width: 1440, height: 1000 }, hasTouch: true },
+    },
+    {
+      name: "touch-phone",
+      testMatch: "touch.spec.ts",
+      use: { ...devices["Pixel 5"], browserName: "chromium" },
     },
     {
       name: "iphone",

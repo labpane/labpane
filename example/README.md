@@ -19,4 +19,6 @@ The browser suite includes touch-enabled iPhone 16 Pro (WebKit) and Pixel 5 (Chr
 
 The browser suite also checks WCAG accessibility rules in light and dark themes, the workspace accessibility tree and keyboard controls, and chart touch targets.
 
+The touch projects send native Chromium touch input on laptop and phone viewports. They cover held-tab reordering and docking, both splitter orientations, cancellation, page swipes, and Back navigation with draft preservation. These are emulated touch tests; testing Safari on the original device is still useful for platform-specific gesture behavior.
+
 Run `bun run test:lighthouse` after building the workspace packages to audit the production homepage, palette, and desktop workspace with Google's mobile and desktop Lighthouse presets. CI requires an accessibility score of 100 on every page and saves HTML and JSON reports in `lighthouse-reports/`. Performance, best practices, and SEO scores are reported alongside accessibility; performance varies with the machine and throttling. Set `CHROME_PATH` to use an installed Chrome or Chromium instead of Playwright's Chromium.

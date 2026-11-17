@@ -1,5 +1,11 @@
 import { useId, useState, type ReactNode } from "react";
-import { densityPresets, useUnsavedChanges, type Layout } from "@labpane/os";
+import {
+  densityPresets,
+  useTabBack,
+  useUnsavedChanges,
+  type Layout,
+} from "@labpane/os";
+import { ArrowLeftIcon } from "lucide-react";
 import {
   Badge,
   Button,
@@ -24,9 +30,21 @@ function DemoPage({
   actions?: ReactNode;
   children: ReactNode;
 }) {
+  const navigation = useTabBack();
   return (
     <Page className="demo-page">
       <header className="demo-page-header">
+        {navigation.canGoBack && (
+          <Button
+            variant="ghost"
+            size="icon-sm"
+            aria-label="Back to previous view"
+            title="Back to previous view"
+            onClick={navigation.back}
+          >
+            <ArrowLeftIcon />
+          </Button>
+        )}
         <h3>{title}</h3>
         <PageActions>{actions}</PageActions>
       </header>
@@ -68,7 +86,9 @@ const tries = [
 const touchTries = [
   "Tap a tab to open it; swipe the tab bar to see more",
   "Use the down arrow to choose from all open tabs",
-  "Touch and hold a tab for its actions, including moving and splitting",
+  "Hold a tab briefly, then drag it to reorder or split panes",
+  "Swipe a page left or right to switch tabs; Back returns to the previous view",
+  "Drag a divider's grip to resize either direction",
   "Close a tab with its ×, then open another with the + button",
   "Open the logo menu to switch the theme or the size",
 ];
