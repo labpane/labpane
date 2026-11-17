@@ -10,7 +10,8 @@ testPackage(import.meta.dir, {
     "react-dom": "^18.2.0 || ^19.0.0",
   },
   entries: ["index.ts", "pwa.ts"],
-  budget: 19_000,
+  // Includes touch gestures and pane Back navigation, alongside the PWA entry.
+  budget: 21_000,
 });
 
 it("keeps PWA browser integration out of the core entry", async () => {

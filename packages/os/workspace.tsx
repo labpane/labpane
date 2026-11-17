@@ -43,6 +43,12 @@ import {
   type TabHistoryStore,
 } from "./tab-history.js";
 import { useBrowserHistory } from "./browser-history.js";
+import {
+  createPaneBack,
+  TabBackContext,
+  type PaneBackStore,
+} from "./tab-back.js";
+import { useTabSwipe } from "./touch-navigation.js";
 import { hasOpenOverlay } from "./overlay.js";
 import type { WindowControlsOverlay } from "./pwa.js";
 
@@ -78,6 +84,8 @@ export type WorkspaceProps<T extends WorkspaceTab> = {
   // history puts the front tab's own history, which starts at its href, behind the browser's Back
   // and Forward
   history?: boolean;
+  /** Swipe non-interactive panel content to select neighboring tabs. Defaults to true. */
+  swipeTabs?: boolean;
   className?: string;
   children: (tab: T, pane: WorkspacePane) => ReactNode;
   empty: (pane: WorkspacePane) => ReactNode;
@@ -120,6 +128,7 @@ function WorkspaceContent<T extends WorkspaceTab>({
   layout,
   onLayoutChange: change,
   history,
+  swipeTabs = true,
   className,
   children,
   empty,
@@ -171,6 +180,24 @@ function WorkspaceContent<T extends WorkspaceTab>({
   const front = active ?? panes(visibleLayout)[0]?.active;
   const openers = useOpeners(tabs, front);
   const historyOf = useTabHistories(tabs);
+  const navigateTab = (key: string) => {
+    onSelect(key);
+    requestAnimationFrame(() => links.get(key)?.focus({ preventScroll: true }));
+  };
+  const [paneBacks] = useState(() => new Map<string, PaneBackStore>());
+  const backOf = (pane: Pane) => {
+    let store = paneBacks.get(pane.id);
+    if (!store) paneBacks.set(pane.id, (store = createPaneBack()));
+    return store;
+  };
+  useLayoutEffect(() => {
+    const currentPanes = panes(visibleLayout);
+    for (const pane of currentPanes)
+      backOf(pane).update(pane.active, pane.tabs, navigateTab);
+    for (const id of paneBacks.keys())
+      if (!currentPanes.some((pane) => pane.id === id)) paneBacks.delete(id);
+    // oxlint-disable-next-line react-hooks/exhaustive-deps -- stores are stable and updated from the current layout
+  }, [visibleLayout, onSelect]);
   const frontTab = tabsByKey.get(front ?? "");
   useBrowserHistory(history && frontTab ? historyOf(frontTab) : undefined);
   const dirty = useRef(new Map<symbol, string>());
@@ -376,6 +403,7 @@ function WorkspaceContent<T extends WorkspaceTab>({
                 )!;
                 const hidden =
                   tab.key !== region.pane.active && tab.key !== lifted;
+                const index = region.pane.tabs.indexOf(tab.key);
                 return (
                   <TabPanel
                     key={tab.key}
@@ -384,6 +412,17 @@ function WorkspaceContent<T extends WorkspaceTab>({
                     pane={region.pane.id}
                     box={region.box}
                     transition={transition}
+                    swipe={swipeTabs && !hidden && !lifted}
+                    previous={
+                      index > 0
+                        ? () => navigateTab(region.pane.tabs[index - 1]!)
+                        : undefined
+                    }
+                    next={
+                      index < region.pane.tabs.length - 1
+                        ? () => navigateTab(region.pane.tabs[index + 1]!)
+                        : undefined
+                    }
                     focus={() => {
                       preferredPane.current = region.pane.id;
                       if (active !== tab.key) onSelect(tab.key);
@@ -396,6 +435,7 @@ function WorkspaceContent<T extends WorkspaceTab>({
                       active={tab.key === front}
                       visible={!hidden}
                       history={historyOf(tab)}
+                      back={backOf(region.pane)}
                       services={services}
                       dirty={dirty.current}
                       render={children}
@@ -428,6 +468,7 @@ type TabBodyProps<T extends WorkspaceTab> = {
   active: boolean;
   visible: boolean;
   history: TabHistoryStore;
+  back: PaneBackStore;
   services: RefObject<(key: string) => void>;
   dirty: Map<symbol, string>;
   render: (tab: T, pane: WorkspacePane) => ReactNode;
@@ -439,6 +480,7 @@ const TabBody = memo(function TabBody<T extends WorkspaceTab>({
   active,
   visible,
   history,
+  back,
   services,
   dirty,
   render,
@@ -469,9 +511,11 @@ const TabBody = memo(function TabBody<T extends WorkspaceTab>({
     <TabStateContext.Provider value={state}>
       <LeaveTab.Provider value={leave}>
         <TabHistoryContext.Provider value={history}>
-          <UnsavedChanges.Provider value={report}>
-            {content}
-          </UnsavedChanges.Provider>
+          <TabBackContext.Provider value={back}>
+            <UnsavedChanges.Provider value={report}>
+              {content}
+            </UnsavedChanges.Provider>
+          </TabBackContext.Provider>
         </TabHistoryContext.Provider>
       </LeaveTab.Provider>
     </TabStateContext.Provider>
@@ -485,6 +529,9 @@ function TabPanel({
   box,
   transition,
   focus,
+  swipe = false,
+  previous,
+  next,
   children,
 }: {
   tab?: WorkspaceTab;
@@ -493,11 +540,15 @@ function TabPanel({
   box: Box;
   transition: boolean;
   focus?: () => void;
+  swipe?: boolean;
+  previous?: () => void;
+  next?: () => void;
   children: ReactNode;
 }) {
   const ids = useWorkspaceIds();
   const { height, borderWidth } = useTabSize();
   const viewport = useRef<HTMLElement>(null);
+  useTabSwipe(viewport, swipe, previous, next);
   useLayoutEffect(() => {
     viewport.current?.scrollTo(0, 0);
   }, [tab?.scrollKey]);

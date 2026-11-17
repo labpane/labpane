@@ -102,6 +102,7 @@ export function WorkspaceTabs({
   const menuFocus = React.useRef<string | undefined>(undefined);
   const drag = React.useRef<
     | (TabDrag & {
+        pointerId: number;
         offset: number;
         offsetY: number;
         sheet: DOMRect;
@@ -110,6 +111,13 @@ export function WorkspaceTabs({
       })
     | undefined
   >(undefined);
+  const touchDrag = React.useRef<
+    { ready: boolean; timer: ReturnType<typeof setTimeout> } | undefined
+  >(undefined);
+  const clearTouchDrag = () => {
+    if (touchDrag.current) clearTimeout(touchDrag.current.timer);
+    touchDrag.current = undefined;
+  };
   const [dragging, setDragging] = React.useState<string>();
   const [pointerFocus, setPointerFocus] = React.useState(false);
   const [announcement, announce] = React.useState("");
@@ -314,6 +322,7 @@ export function WorkspaceTabs({
       latest.current.refresh();
     });
   const finish = (cancel = false) => {
+    clearTouchDrag();
     if (cancel) pointer.current!.cancel();
     else pointer.current!.flush();
     const current = drag.current;
@@ -602,6 +611,16 @@ export function WorkspaceTabs({
             ? nav.clientWidth
             : 1);
     };
+    // Keep quick swipes native. Once a held tab starts moving, cancel native
+    // panning before it can cancel pointer capture.
+    const touchStart = (event: TouchEvent) => {
+      if (drag.current && event.touches.length > 1) latest.current.finish(true);
+    };
+    const touchMove = (event: TouchEvent) => {
+      if (event.touches.length !== 1) latest.current.finish(true);
+      else if (touchDrag.current?.ready && event.cancelable)
+        event.preventDefault();
+    };
     const unobserve = geometry.observe(
       [
         nav,
@@ -614,6 +633,8 @@ export function WorkspaceTabs({
     addEventListener("scroll", scroll, true);
     addEventListener("blur", blur);
     nav.addEventListener("wheel", wheel, { passive: false });
+    nav.addEventListener("touchmove", touchMove, { passive: false });
+    addEventListener("touchstart", touchStart, { passive: true });
     return () => {
       for (const name of ["transitionrun", "transitionend", "transitioncancel"])
         board?.removeEventListener(name, transition);
@@ -622,6 +643,8 @@ export function WorkspaceTabs({
       removeEventListener("scroll", scroll, true);
       removeEventListener("blur", blur);
       nav.removeEventListener("wheel", wheel);
+      nav.removeEventListener("touchmove", touchMove);
+      removeEventListener("touchstart", touchStart);
       geometry.cancel();
       restoreFrame();
     };
@@ -629,6 +652,7 @@ export function WorkspaceTabs({
   }, [active, dragBoundary]);
   React.useEffect(
     () => () => {
+      clearTouchDrag();
       pointer.current!.cancel();
       settling.current?.cancel();
       for (const animation of animations.current.values()) animation.cancel();
@@ -678,6 +702,8 @@ export function WorkspaceTabs({
         onKeyDownCapture={() => setPointerFocus(false)}
         onBlurCapture={() => setPointerFocus(false)}
         onPointerDownCapture={() => {
+          docking.cancel();
+          clearTouchDrag();
           pointer.current!.cancel();
           setDraftOrder(undefined);
           content.release(false);
@@ -698,7 +724,19 @@ export function WorkspaceTabs({
           const current = drag.current,
             nav = navRef.current,
             x = event.clientX;
-          if (!(event.buttons & 1) || !current || !nav) return;
+          if (
+            !(event.buttons & 1) ||
+            !current ||
+            current.pointerId !== event.pointerId ||
+            !nav
+          )
+            return;
+          if (hasOpenOverlay()) return finish(true);
+          if (touchDrag.current && !touchDrag.current.ready) {
+            if (Math.hypot(x - current.x, event.clientY - current.y) >= 8)
+              finish(true);
+            return;
+          }
           if (
             !current.moved &&
             Math.hypot(x - current.x, event.clientY - current.y) < 6
@@ -824,16 +862,24 @@ export function WorkspaceTabs({
                 onKeyDown={(event) => keyDown(event, key, index)}
                 onPointerDown={(event) => {
                   if (event.button !== 0 || !event.isPrimary) return;
-                  // Let a finger scroll the strip (or the page). A tap selects
-                  // through onClick; starting a swipe must not select or dock.
-                  if (event.pointerType === "touch") return;
-                  if (event.pointerType === "mouse") event.preventDefault();
-                  event.currentTarget.setPointerCapture(event.pointerId);
-                  event.currentTarget.focus({ preventScroll: true });
-                  setPointerFocus(true);
+                  if (event.pointerType === "touch") {
+                    const pending = {
+                      ready: false,
+                      timer: setTimeout(() => {
+                        pending.ready = true;
+                      }, 300),
+                    };
+                    touchDrag.current = pending;
+                  } else {
+                    event.preventDefault();
+                    event.currentTarget.setPointerCapture(event.pointerId);
+                    event.currentTarget.focus({ preventScroll: true });
+                    setPointerFocus(true);
+                  }
                   const box =
                     event.currentTarget.parentElement!.getBoundingClientRect();
                   drag.current = {
+                    pointerId: event.pointerId,
                     key,
                     offset: event.clientX - box.left,
                     offsetY: event.clientY - box.top,

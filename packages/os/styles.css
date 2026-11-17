@@ -150,8 +150,32 @@
 }
 
 .lab-divider {
+  --lab-divider-hit-size: 24px;
   z-index: 20;
   cursor: row-resize;
+}
+
+@media (any-pointer: coarse) {
+  .lab-divider {
+    --lab-divider-hit-size: 44px;
+  }
+
+  .lab-divider::after {
+    content: "";
+    position: absolute;
+    inset: 50% auto auto 50%;
+    width: 32px;
+    height: 3px;
+    border-radius: 2px;
+    background: var(--lab-muted-foreground);
+    transform: translate(-50%, -50%);
+    pointer-events: none;
+  }
+
+  .lab-divider[aria-orientation="vertical"]::after {
+    width: 3px;
+    height: 32px;
+  }
 }
 
 .lab-divider[aria-orientation="vertical"] {
@@ -387,6 +411,9 @@
   border-top-right-radius: 0.75rem;
   outline-style: none;
   touch-action: auto;
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  user-select: none;
   color: var(--lab-muted-foreground);
 }
 

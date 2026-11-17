@@ -21,6 +21,7 @@ export {
   type TabState,
 } from "./tab-state.js";
 export { useLeaveTab } from "./leave-tab.js";
+export { useTabBack, type TabBack } from "./tab-back.js";
 export { useTabHistory, type TabHistory } from "./tab-history.js";
 export { hasOpenOverlay } from "./overlay.js";
 export {
