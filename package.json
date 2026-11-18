@@ -22,8 +22,8 @@
   "devDependencies": {
     "@arethetypeswrong/cli": "^0.18.5",
     "@changesets/cli": "^3.0.3",
-    "oxlint": "^1.91.0",
-    "prettier": "^3.9.10",
+    "oxlint": "^1.93.0",
+    "prettier": "^3.10.0",
     "publint": "^0.3.25"
   }
 }
