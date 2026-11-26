@@ -1,5 +1,16 @@
 # @labpane/os
 
+## 1.6.0
+
+### Minor Changes
+
+- 78da411: Improve workspace tab semantics while keeping close controls available to assistive technology. Improve component labels, text contrast, command list semantics, and chart touch targets. SidebarInset and BrowserLayoutPane now support asChild for embedding layouts without nested main landmarks.
+- 78da411: Support held-tab touch dragging and one-finger swipes between neighboring tabs while preserving native scrolling, form gestures, and pinch zoom. Give split dividers larger touch targets and keep resizing anchored to the finger's starting position. Add useTabBack for returning through detail views and previously selected tabs without closing editors or losing drafts.
+
+### Patch Changes
+
+- b59c3eb: Measure the workspace before its first paint so panes open at their full size instead of showing for a frame at their minimum size in the top-left corner.
+
 ## 1.5.1
 
 ### Patch Changes
