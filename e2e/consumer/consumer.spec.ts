@@ -1,4 +1,4 @@
-import type { Page } from "@playwright/test";
+import type { Locator, Page } from "@playwright/test";
 import { expect, test } from "./fixtures";
 
 const tab = (page: Page, name: string) =>
@@ -8,6 +8,13 @@ const scrollButtons = (page: Page) =>
 const tabWidth = async (page: Page) =>
   (await page.getByRole("tab").first().boundingBox())!.width;
 const commits = (page: Page) => page.evaluate(() => window.lab.commits);
+// Radix ignores an Escape pressed in the first moments after a layer opens,
+// while it is still registering the layer, so press again if it stayed open.
+const escape = (page: Page, layer: Locator) =>
+  expect(async () => {
+    await page.keyboard.press("Escape");
+    await expect(layer).toHaveCount(0, { timeout: 1_000 });
+  }).toPass();
 
 test("mounts tabs and measures overflow", async ({ page }) => {
   await page.goto("?tabs=3");
@@ -245,15 +252,13 @@ test("the app's own Radix menu and dialog still close with Escape", async ({
   const menu = page.getByRole("button", { name: "App", exact: true });
   await menu.click();
   await expect(page.getByRole("menu")).toBeVisible();
-  await page.keyboard.press("Escape");
-  await expect(page.getByRole("menu")).toHaveCount(0);
+  await escape(page, page.getByRole("menu"));
   await expect(menu).toBeFocused();
 
   const about = page.getByRole("button", { name: "About", exact: true });
   await about.click();
   await expect(page.getByRole("dialog", { name: "About" })).toBeVisible();
-  await page.keyboard.press("Escape");
-  await expect(page.getByRole("dialog")).toHaveCount(0);
+  await escape(page, page.getByRole("dialog"));
   await expect(about).toBeFocused();
 });
 
