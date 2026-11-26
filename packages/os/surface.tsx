@@ -153,11 +153,20 @@ export function WorkspaceSurface({
     previousGeometry.current = geometry;
   }, [geometry]);
   useLayoutEffect(() => {
+    const element = board.current!;
+    const measure = (width: number, height: number) =>
+      setSize((current) =>
+        current.width === width && current.height === height
+          ? current
+          : { width, height },
+      );
+    const bounds = element.getBoundingClientRect();
+    measure(bounds.width, bounds.height);
     const observer = new ResizeObserver(([entry]) => {
       const { width, height } = entry!.contentRect;
-      setSize({ width, height });
+      measure(width, height);
     });
-    observer.observe(board.current!);
+    observer.observe(element);
     return () => observer.disconnect();
   }, []);
   const { leaves, dividers } = layoutBoxes(
