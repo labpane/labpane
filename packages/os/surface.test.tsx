@@ -1,7 +1,7 @@
 import { afterEach, expect, it } from "bun:test";
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { WorkspaceSurface, type Docking } from "./surface.js";
-import type { Layout, Pane } from "./layout.js";
+import type { Box, Layout, Pane } from "./layout.js";
 
 afterEach(cleanup);
 const layout = {
@@ -173,4 +173,37 @@ it("reuses the lifted source descriptor across zones and refreshes changed layou
   expect(source).not.toBe(lifted);
   expect(source?.active).toBe("d");
   expect(source?.tabs).toEqual(["a", "d", "b"]);
+});
+
+it("sizes panes from the board before the first paint", () => {
+  const original = Element.prototype.getBoundingClientRect;
+  Element.prototype.getBoundingClientRect = function (this: Element) {
+    return this.classList.contains("lab-board")
+      ? new DOMRect(0, 0, 900.5, 600.25)
+      : original.call(this);
+  };
+  try {
+    const painted: { box: Box; transition: boolean }[] = [];
+    render(
+      <WorkspaceSurface
+        layout={{ id: "only", tabs: ["a"], active: "a" }}
+        change={() => {}}
+        header={(pane) => <span>{pane.id}</span>}
+        content={(regions, transition) => {
+          painted.push({ box: regions[0]!.box, transition });
+          return null;
+        }}
+      />,
+    );
+    expect(painted.at(-1)).toEqual({
+      box: { x: 0, y: 0, width: 900.5, height: 600.25 },
+      transition: false,
+    });
+    expect(
+      screen.getByText("only").closest<HTMLElement>("[data-pane-header]")!.style
+        .width,
+    ).toBe("900.5px");
+  } finally {
+    Element.prototype.getBoundingClientRect = original;
+  }
 });
